@@ -181,7 +181,7 @@ def analyze_layer(
         # Rhythm/onset analysis
         if analysis_type in ["all", "rhythm"]:
             onset_env = librosa.onset.onset_strength(y=y, sr=sr)
-            onsets = librosa.onset.onset_detect(y=y, sr=sr)
+            onsets = librosa.onset.onset_detect(onset_envelope=onset_env, sr=sr)
             results["onsets_count"] = len(onsets)
             results["onset_rate"] = float(len(onsets) / results["duration"])
         

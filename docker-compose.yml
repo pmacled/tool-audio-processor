@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  audio-processor-mcp:
+    build: .
+    image: audio-processor-mcp:latest
+    container_name: audio-processor-mcp
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./input:/app/input
+      - ./output:/app/output
+      - ./temp:/app/temp
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - PYTHONUNBUFFERED=1

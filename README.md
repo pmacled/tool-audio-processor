@@ -36,17 +36,57 @@ docker build -t audio-processor-mcp .
 
 ## Running the Server
 
-### With GPU Support (Recommended)
+### Using Docker Compose (Recommended)
 
 ```bash
-docker run --gpus all -v $(pwd)/audio:/app/input -v $(pwd)/output:/app/output audio-processor-mcp
+# Create necessary directories
+mkdir -p input output temp
+
+# Run with docker-compose
+docker-compose up
 ```
 
-### CPU Only
+### Using Docker Directly
+
+#### With GPU Support
 
 ```bash
-docker run -v $(pwd)/audio:/app/input -v $(pwd)/output:/app/output audio-processor-mcp
+docker run --gpus all -i -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output audio-processor-mcp
 ```
+
+#### CPU Only
+
+```bash
+docker run -i -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output audio-processor-mcp
+```
+
+### MCP Client Configuration
+
+Add this to your MCP client configuration (e.g., Claude Desktop):
+
+```json
+{
+  "mcpServers": {
+    "audio-processor": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "--gpus",
+        "all",
+        "-v",
+        "${PWD}/input:/app/input",
+        "-v",
+        "${PWD}/output:/app/output",
+        "audio-processor-mcp"
+      ]
+    }
+  }
+}
+```
+
+See `mcp-config.json` for a complete example.
 
 ## MCP Tools Reference
 
@@ -238,12 +278,30 @@ final_mix = mix_layers(
 ```
 .
 ├── Dockerfile           # Docker image configuration
+├── docker-compose.yml   # Docker Compose configuration
 ├── requirements.txt     # Python dependencies
-├── server.py           # MCP server implementation
-├── .dockerignore       # Docker build exclusions
-├── .gitignore          # Git exclusions
-└── README.md           # This file
+├── server.py            # MCP server implementation
+├── test_server.py       # Validation test script
+├── mcp-config.json      # Example MCP client configuration
+├── .dockerignore        # Docker build exclusions
+├── .gitignore           # Git exclusions
+└── README.md            # This file
 ```
+
+## Testing
+
+Run the validation tests to ensure everything is configured correctly:
+
+```bash
+python3 test_server.py
+```
+
+This will verify:
+- Server syntax and structure
+- All 6 tools are properly defined
+- MCP decorators are present
+- Dockerfile configuration
+- Python dependencies
 
 ## GPU Acceleration
 

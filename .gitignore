@@ -44,9 +44,6 @@ temp/
 *.mid
 *.midi
 
-# Docker
-.dockerignore
-
 # OS
 .DS_Store
 Thumbs.db

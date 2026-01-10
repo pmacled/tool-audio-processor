@@ -22,6 +22,14 @@ This MCP server provides six powerful tools for audio processing:
 - **MCP Framework**: FastMCP
 - **MIDI**: Pretty MIDI, Mido
 
+## Container Architecture
+
+The container uses a **dual-workspace design** to prevent conflicts:
+- **`/app`**: Container's internal workspace containing the MCP server and application code
+- **`/workspace`**: User's workspace mounted from the local directory for audio files and processing
+
+This separation ensures that mounting your local directory doesn't interfere with the container's built-in files.
+
 ## Prerequisites
 
 - Docker with NVIDIA GPU support (nvidia-docker2)

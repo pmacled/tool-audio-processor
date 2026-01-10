@@ -13,7 +13,9 @@ def test_server_imports():
     
     try:
         spec = importlib.util.spec_from_file_location("server", "server.py")
-        server = importlib.util.module_from_spec(spec)
+        if spec is None:
+            raise ImportError("Could not load module spec for server.py")
+        importlib.util.module_from_spec(spec)
         
         # We won't execute the module (spec.loader.exec_module) 
         # because it would try to run the MCP server

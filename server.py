@@ -8,7 +8,6 @@ import os
 import tempfile
 from pathlib import Path
 from typing import List, Dict, Any, Optional
-import json
 
 from fastmcp import FastMCP
 import torch

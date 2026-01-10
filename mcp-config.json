@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "audio-processor": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "--gpus",
+        "all",
+        "-v",
+        "${PWD}/input:/app/input",
+        "-v",
+        "${PWD}/output:/app/output",
+        "audio-processor-mcp"
+      ],
+      "description": "MCP server for audio layer manipulation with CUDA acceleration"
+    }
+  }
+}

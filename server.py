@@ -236,8 +236,10 @@ def synthesize_instrument_layer(
         # Normalize audio
         audio = audio / np.max(np.abs(audio))
         
-        # Ensure output directory exists
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        # Ensure output directory exists (if a directory is specified)
+        dir_name = os.path.dirname(output_path)
+        if dir_name:
+            os.makedirs(dir_name, exist_ok=True)
         
         # Save audio
         sf.write(output_path, audio, sample_rate)

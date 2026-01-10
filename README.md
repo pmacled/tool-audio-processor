@@ -62,7 +62,9 @@ docker run -i -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output audio-proc
 
 ### MCP Client Configuration
 
-Add this to your MCP client configuration (e.g., Claude Desktop):
+Add this to your MCP client configuration (e.g., Claude Code). Choose either the GPU or CPU version based on your system:
+
+#### Option 1: With GPU Support (Recommended for faster processing)
 
 ```json
 {
@@ -80,13 +82,41 @@ Add this to your MCP client configuration (e.g., Claude Desktop):
         "-v",
         "${PWD}/output:/app/output",
         "audio-processor-mcp"
-      ]
+      ],
+      "description": "MCP server for audio layer manipulation with CUDA acceleration"
     }
   }
 }
 ```
 
-See `mcp-config.json` for a complete example.
+**Requirements**: NVIDIA GPU with nvidia-docker2 installed
+
+#### Option 2: CPU Only
+
+```json
+{
+  "mcpServers": {
+    "audio-processor": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-v",
+        "${PWD}/input:/app/input",
+        "-v",
+        "${PWD}/output:/app/output",
+        "audio-processor-mcp"
+      ],
+      "description": "MCP server for audio layer manipulation (CPU-only)"
+    }
+  }
+}
+```
+
+**Note**: Processing will be slower without GPU acceleration, but works on any system with Docker.
+
+See `mcp-config.json` for both configurations.
 
 ## MCP Tools Reference
 

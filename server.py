@@ -18,7 +18,6 @@ import soundfile as sf
 from demucs.pretrained import get_model
 from demucs.apply import apply_model
 from demucs.audio import save_audio
-import mido
 from mido import MidiFile, MidiTrack, Message
 import pretty_midi
 

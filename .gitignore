@@ -39,6 +39,7 @@ ENV/
 *.ogg
 *.m4a
 *.aac
+input/
 output/
 temp/
 *.mid

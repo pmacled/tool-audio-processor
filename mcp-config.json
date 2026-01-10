@@ -11,9 +11,9 @@
         "--gpus",
         "all",
         "-v",
-        "${PWD}/input:/app/input",
-        "-v",
-        "${PWD}/output:/app/output",
+        "${PWD}:/workspace",
+        "-w",
+        "/workspace",
         "ghcr.io/pmacled/tool-audio-processor:latest"
       ],
       "description": "MCP server for audio layer manipulation with CUDA acceleration (requires NVIDIA GPU and nvidia-docker)"
@@ -27,9 +27,9 @@
         "--user",
         "1000:1000",
         "-v",
-        "${PWD}/input:/app/input",
-        "-v",
-        "${PWD}/output:/app/output",
+        "${PWD}:/workspace",
+        "-w",
+        "/workspace",
         "ghcr.io/pmacled/tool-audio-processor:latest"
       ],
       "description": "MCP server for audio layer manipulation (CPU-only)"

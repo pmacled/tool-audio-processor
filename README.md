@@ -39,10 +39,7 @@ docker build -t audio-processor-mcp .
 ### Using Docker Compose (Recommended)
 
 ```bash
-# Create necessary directories
-mkdir -p input output temp
-
-# Run with docker-compose
+# Run with docker-compose (no need to create directories first)
 docker-compose up
 ```
 
@@ -51,16 +48,16 @@ docker-compose up
 #### With GPU Support
 
 ```bash
-docker run --gpus all -i --user $(id -u):$(id -g) -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output audio-processor-mcp
+docker run --gpus all -i --user $(id -u):$(id -g) -v $(pwd):/workspace -w /workspace audio-processor-mcp
 ```
 
 #### CPU Only
 
 ```bash
-docker run -i --user $(id -u):$(id -g) -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output audio-processor-mcp
+docker run -i --user $(id -u):$(id -g) -v $(pwd):/workspace -w /workspace audio-processor-mcp
 ```
 
-**Note:** The `--user $(id -u):$(id -g)` flag ensures the container runs as your user, preventing permission issues with mounted volumes.
+**Note:** The `--user $(id -u):$(id -g)` flag ensures the container runs as your user, preventing permission issues with mounted volumes. The entire working directory is mounted, allowing the container to create input/output directories as needed.
 
 ### MCP Client Configuration
 
@@ -82,9 +79,9 @@ Add this to your MCP client configuration (e.g., Claude Code). Choose either the
         "--gpus",
         "all",
         "-v",
-        "${PWD}/input:/app/input",
-        "-v",
-        "${PWD}/output:/app/output",
+        "${PWD}:/workspace",
+        "-w",
+        "/workspace",
         "ghcr.io/pmacled/tool-audio-processor:latest"
       ],
       "description": "MCP server for audio layer manipulation with CUDA acceleration"
@@ -109,9 +106,9 @@ Add this to your MCP client configuration (e.g., Claude Code). Choose either the
         "--user",
         "1000:1000",
         "-v",
-        "${PWD}/input:/app/input",
-        "-v",
-        "${PWD}/output:/app/output",
+        "${PWD}:/workspace",
+        "-w",
+        "/workspace",
         "ghcr.io/pmacled/tool-audio-processor:latest"
       ],
       "description": "MCP server for audio layer manipulation (CPU-only)"
@@ -123,6 +120,7 @@ Add this to your MCP client configuration (e.g., Claude Code). Choose either the
 **Notes**:
 - Processing will be slower without GPU acceleration, but works on any system with Docker.
 - The `--user 1000:1000` flag prevents permission issues with mounted volumes. If you have a different UID/GID, run `id -u` and `id -g` to find your values and update accordingly.
+- The entire working directory is mounted at `/workspace`, allowing you to work with audio files in your project structure without pre-creating directories.
 
 See `mcp-config.json` for both configurations.
 
@@ -134,7 +132,7 @@ Separates audio into individual stems using the Demucs model.
 
 **Parameters:**
 - `audio_path` (str): Path to input audio file
-- `output_dir` (str, optional): Output directory (default: /app/output)
+- `output_dir` (str, optional): Output directory (default: ./output)
 - `model` (str, optional): Demucs model to use (default: htdemucs)
 
 **Returns:**
@@ -142,10 +140,10 @@ Separates audio into individual stems using the Demucs model.
 {
   "success": true,
   "layers": {
-    "vocals": "/app/output/song_vocals.wav",
-    "drums": "/app/output/song_drums.wav",
-    "bass": "/app/output/song_bass.wav",
-    "other": "/app/output/song_other.wav"
+    "vocals": "./output/song_vocals.wav",
+    "drums": "./output/song_drums.wav",
+    "bass": "./output/song_bass.wav",
+    "other": "./output/song_other.wav"
   },
   "sample_rate": 44100,
   "device": "cuda:0"
@@ -179,14 +177,14 @@ Generates audio from MIDI files.
 **Parameters:**
 - `midi_path` (str): Path to MIDI file
 - `instrument` (str, optional): Instrument type (default: piano)
-- `output_path` (str, optional): Output path (default: /app/output/synthesized.wav)
+- `output_path` (str, optional): Output path (default: ./output/synthesized.wav)
 - `sample_rate` (int, optional): Sample rate (default: 44100)
 
 **Returns:**
 ```json
 {
   "success": true,
-  "output_path": "/app/output/synthesized.wav",
+  "output_path": "./output/synthesized.wav",
   "duration": 120.5,
   "total_notes": 1500
 }
@@ -200,13 +198,13 @@ Replaces a specific layer in a mixed audio file.
 - `original_mix_path` (str): Path to original mixed audio
 - `layer_to_replace` (str): Layer to replace (vocals, drums, bass, or other)
 - `new_layer_path` (str): Path to new layer audio
-- `output_path` (str, optional): Output path (default: /app/output/replaced_mix.wav)
+- `output_path` (str, optional): Output path (default: ./output/replaced_mix.wav)
 
 **Returns:**
 ```json
 {
   "success": true,
-  "output_path": "/app/output/replaced_mix.wav",
+  "output_path": "./output/replaced_mix.wav",
   "replaced_layer": "vocals",
   "duration": 180.5
 }
@@ -219,7 +217,7 @@ Applies audio effects to a layer.
 **Parameters:**
 - `audio_path` (str): Path to audio file
 - `effect` (str): Effect type - "pitch_shift", "time_stretch", "reverb", "normalize", "fade"
-- `output_path` (str, optional): Output path (default: /app/output/modified.wav)
+- `output_path` (str, optional): Output path (default: ./output/modified.wav)
 - `effect_params`: Effect-specific parameters
   - pitch_shift: `steps` (int) - semitones
   - time_stretch: `rate` (float) - speed multiplier
@@ -231,7 +229,7 @@ Applies audio effects to a layer.
 ```json
 {
   "success": true,
-  "output_path": "/app/output/modified.wav",
+  "output_path": "./output/modified.wav",
   "effect": "pitch_shift",
   "effect_params": {"steps": 2}
 }
@@ -243,7 +241,7 @@ Combines multiple audio layers into a single mix.
 
 **Parameters:**
 - `layer_paths` (List[str]): List of audio file paths
-- `output_path` (str, optional): Output path (default: /app/output/mixed.wav)
+- `output_path` (str, optional): Output path (default: ./output/mixed.wav)
 - `layer_volumes` (List[float], optional): Volume multipliers for each layer
 - `normalize_output` (bool, optional): Normalize output (default: true)
 
@@ -251,7 +249,7 @@ Combines multiple audio layers into a single mix.
 ```json
 {
   "success": true,
-  "output_path": "/app/output/mixed.wav",
+  "output_path": "./output/mixed.wav",
   "num_layers": 4,
   "duration": 180.5
 }
@@ -264,8 +262,8 @@ Combines multiple audio layers into a single mix.
 ```python
 # Separate audio into layers
 result = separate_audio_layers(
-    audio_path="/app/input/song.wav",
-    output_dir="/app/output"
+    audio_path="./input/song.wav",
+    output_dir="./output"
 )
 
 # Analyze the vocal layer
@@ -280,10 +278,10 @@ analysis = analyze_layer(
 ```python
 # Replace vocals with a new recording
 result = replace_layer(
-    original_mix_path="/app/input/original.wav",
+    original_mix_path="./input/original.wav",
     layer_to_replace="vocals",
-    new_layer_path="/app/input/new_vocals.wav",
-    output_path="/app/output/new_mix.wav"
+    new_layer_path="./input/new_vocals.wav",
+    output_path="./output/new_mix.wav"
 )
 ```
 
@@ -292,22 +290,22 @@ result = replace_layer(
 ```python
 # Apply pitch shift to vocals
 modified = modify_layer(
-    audio_path="/app/output/vocals.wav",
+    audio_path="./output/vocals.wav",
     effect="pitch_shift",
     steps=2,
-    output_path="/app/output/vocals_shifted.wav"
+    output_path="./output/vocals_shifted.wav"
 )
 
 # Mix all layers with custom volumes
 final_mix = mix_layers(
     layer_paths=[
-        "/app/output/vocals_shifted.wav",
-        "/app/output/drums.wav",
-        "/app/output/bass.wav",
-        "/app/output/other.wav"
+        "./output/vocals_shifted.wav",
+        "./output/drums.wav",
+        "./output/bass.wav",
+        "./output/other.wav"
     ],
     layer_volumes=[1.2, 1.0, 0.8, 0.9],
-    output_path="/app/output/final_mix.wav"
+    output_path="./output/final_mix.wav"
 )
 ```
 
@@ -360,7 +358,7 @@ To check if GPU is being used, look for `"device": "cuda:0"` in the tool respons
 
 ### Permission Denied Errors
 
-If you get permission errors when writing to input/output directories:
+If you get permission errors when writing to directories:
 
 **Using docker-compose:**
 The compose file uses `${UID:-1000}:${GID:-1000}` to run as your user. Ensure these environment variables are set:
@@ -373,11 +371,13 @@ docker-compose up
 **Using docker run:**
 Make sure to include the `--user` flag:
 ```bash
-docker run --user $(id -u):$(id -g) ...
+docker run --user $(id -u):$(id -g) -v $(pwd):/workspace -w /workspace ...
 ```
 
 **Using MCP client:**
 Update the `--user` value in your MCP config to match your UID:GID (run `id -u` and `id -g` to find these values).
+
+**Note:** The entire working directory is now mounted, eliminating the need to pre-create input/output directories. The container will create them with the correct permissions as needed.
 
 ### GPU Not Detected
 

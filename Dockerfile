@@ -36,7 +36,7 @@ RUN curl -fsS https://bootstrap.pypa.io/get-pip.py -o get-pip.py \
 RUN python3.12 -m pip install --upgrade pip setuptools wheel
 
 # Set working directory
-WORKDIR /app
+WORKDIR /workspace
 
 # Copy requirements first for better caching
 COPY requirements.txt .
@@ -49,9 +49,6 @@ RUN pip install -r requirements.txt
 
 # Copy application code
 COPY . .
-
-# Create directories for audio processing
-RUN mkdir -p /app/output /app/temp
 
 # Expose MCP server port (if needed for stdio, this is optional)
 # The MCP server typically uses stdio for communication

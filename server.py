@@ -51,7 +51,7 @@ def get_demucs_model(model_name: str = 'htdemucs'):
 @mcp.tool()
 def separate_audio_layers(
     audio_path: str,
-    output_dir: str = "/app/output",
+    output_dir: str = "./output",
     model: str = "htdemucs"
 ) -> Dict[str, Any]:
     """
@@ -59,7 +59,7 @@ def separate_audio_layers(
     
     Args:
         audio_path: Path to the input audio file
-        output_dir: Directory to save separated layers (default: /app/output)
+        output_dir: Directory to save separated layers (default: ./output)
         model: Demucs model to use (default: htdemucs)
     
     Returns:
@@ -225,7 +225,7 @@ def analyze_layer(
 def synthesize_instrument_layer(
     midi_path: str,
     instrument: str = "piano",
-    output_path: str = "/app/output/synthesized.wav",
+    output_path: str = "./output/synthesized.wav",
     sample_rate: int = 44100
 ) -> Dict[str, Any]:
     """
@@ -315,7 +315,7 @@ def replace_layer(
     original_mix_path: str,
     layer_to_replace: str,
     new_layer_path: str,
-    output_path: str = "/app/output/replaced_mix.wav"
+    output_path: str = "./output/replaced_mix.wav"
 ) -> Dict[str, Any]:
     """
     Replace a specific layer in a mixed audio file with a new layer.
@@ -428,7 +428,7 @@ def replace_layer(
 def modify_layer(
     audio_path: str,
     effect: str,
-    output_path: str = "/app/output/modified.wav",
+    output_path: str = "./output/modified.wav",
     steps: Optional[int] = 0,
     rate: Optional[float] = 1.0,
     target_db: Optional[float] = -20.0,
@@ -552,7 +552,7 @@ def modify_layer(
 @mcp.tool()
 def mix_layers(
     layer_paths: List[str],
-    output_path: str = "/app/output/mixed.wav",
+    output_path: str = "./output/mixed.wav",
     layer_volumes: Optional[List[float]] = None,
     normalize_output: bool = True
 ) -> Dict[str, Any]:

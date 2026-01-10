@@ -8,10 +8,9 @@ services:
     stdin_open: true
     tty: true
     user: "${UID:-1000}:${GID:-1000}"
+    working_dir: /workspace
     volumes:
-      - ./input:/app/input
-      - ./output:/app/output
-      - ./temp:/app/temp
+      - .:/workspace
     deploy:
       resources:
         reservations:

@@ -6,6 +6,7 @@ Provides tools for separating, analyzing, synthesizing, and manipulating audio l
 
 import os
 import tempfile
+import shutil
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
@@ -36,12 +37,12 @@ def get_device():
     return _device
 
 
-def get_demucs_model():
+def get_demucs_model(model_name: str = 'htdemucs'):
     """Load and cache the Demucs model."""
     global _demucs_model
     if _demucs_model is None:
         device = get_device()
-        _demucs_model = get_model(name='htdemucs')
+        _demucs_model = get_model(name=model_name)
         _demucs_model.to(device)
         _demucs_model.eval()
     return _demucs_model
@@ -65,6 +66,14 @@ def separate_audio_layers(
         Dictionary with paths to separated layer files and metadata
     """
     try:
+        # Validate input file exists
+        if not os.path.isfile(audio_path):
+            return {
+                "success": False,
+                "error": f"Audio file not found: {audio_path}",
+                "message": f"The specified audio file does not exist: {audio_path}"
+            }
+        
         # Ensure output directory exists
         os.makedirs(output_dir, exist_ok=True)
         
@@ -72,8 +81,8 @@ def separate_audio_layers(
         audio, sr = torchaudio.load(audio_path)
         device = get_device()
         
-        # Load model
-        demucs_model = get_demucs_model()
+        # Load model (use the specified model parameter)
+        demucs_model = get_demucs_model(model)
         
         # Apply separation
         audio = audio.to(device)
@@ -133,6 +142,14 @@ def analyze_layer(
         Dictionary with analysis results including tempo, key, notes, and rhythm information
     """
     try:
+        # Validate input file exists
+        if not os.path.isfile(audio_path):
+            return {
+                "success": False,
+                "error": f"Audio file not found: {audio_path}",
+                "message": f"The specified audio file does not exist: {audio_path}"
+            }
+        
         # Load audio
         y, sr = librosa.load(audio_path, sr=None)
         
@@ -258,8 +275,10 @@ def synthesize_instrument_layer(
         # Synthesize audio
         audio = midi_data.fluidsynth(fs=sample_rate)
         
-        # Normalize audio
-        audio = audio / np.max(np.abs(audio))
+        # Normalize audio (avoid division by zero for silent audio)
+        max_val = np.max(np.abs(audio))
+        if max_val > 0:
+            audio = audio / max_val
         
         # Ensure output directory exists (if a directory is specified)
         dir_name = os.path.dirname(output_path)
@@ -313,66 +332,89 @@ def replace_layer(
     try:
         # First, separate the original mix
         temp_dir = tempfile.mkdtemp()
-        separation_result = separate_audio_layers(original_mix_path, temp_dir)
         
-        if not separation_result["success"]:
-            return separation_result
-        
-        layers = separation_result["layers"]
-        
-        # Validate layer name
-        if layer_to_replace not in layers:
-            return {
-                "success": False,
-                "error": f"Invalid layer name: {layer_to_replace}",
-                "message": f"Layer must be one of: {', '.join(layers.keys())}"
-            }
-        
-        # Load all layers
-        layer_audio = {}
-        sr = None
-        max_length = 0
-        
-        for name, path in layers.items():
-            if name == layer_to_replace:
-                # Load the new layer instead
-                audio, sr = librosa.load(new_layer_path, sr=None)
-            else:
-                audio, sr = librosa.load(path, sr=sr)
+        try:
+            separation_result = separate_audio_layers(original_mix_path, temp_dir)
             
-            layer_audio[name] = audio
-            max_length = max(max_length, len(audio))
-        
-        # Pad all layers to the same length
-        for name in layer_audio:
-            if len(layer_audio[name]) < max_length:
-                layer_audio[name] = np.pad(
-                    layer_audio[name], 
-                    (0, max_length - len(layer_audio[name]))
-                )
-        
-        # Mix all layers
-        mixed = np.zeros(max_length)
-        for audio in layer_audio.values():
-            mixed += audio
-        
-        # Normalize
-        mixed = mixed / len(layer_audio)
-        
-        # Ensure output directory exists
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        
-        # Save output
-        sf.write(output_path, mixed, sr)
-        
-        return {
-            "success": True,
-            "output_path": output_path,
-            "replaced_layer": layer_to_replace,
-            "sample_rate": sr,
-            "duration": float(max_length / sr),
-            "message": f"Successfully replaced {layer_to_replace} layer"
-        }
+            if not separation_result["success"]:
+                return separation_result
+            
+            layers = separation_result["layers"]
+            
+            # Validate layer name
+            if layer_to_replace not in layers:
+                return {
+                    "success": False,
+                    "error": f"Invalid layer name: {layer_to_replace}",
+                    "message": f"Layer must be one of: {', '.join(layers.keys())}"
+                }
+            
+            # Determine reference sample rate from separated layers (original mix)
+            # Use the first layer's native sample rate as the target for all layers.
+            first_layer_path = next(iter(layers.values()))
+            _, target_sr = librosa.load(first_layer_path, sr=None)
+            
+            # Load all layers
+            layer_audio = {}
+            max_length = 0
+            
+            for name, path in layers.items():
+                if name == layer_to_replace:
+                    # Load the new layer, resampling to match the original mix's sample rate
+                    audio, _ = librosa.load(new_layer_path, sr=target_sr)
+                else:
+                    # Load existing layers, resampling (if needed) to the target sample rate
+                    audio, _ = librosa.load(path, sr=target_sr)
+                
+                layer_audio[name] = audio
+                max_length = max(max_length, len(audio))
+            
+            # Use the target sample rate for subsequent processing and saving
+            sr = target_sr
+            
+            # Pad all layers to the same length
+            for name in layer_audio:
+                if len(layer_audio[name]) < max_length:
+                    layer_audio[name] = np.pad(
+                        layer_audio[name], 
+                        (0, max_length - len(layer_audio[name]))
+                    )
+            
+            # Mix all layers
+            mixed = np.zeros(max_length)
+            num_layers = len(layer_audio)
+            if num_layers == 0:
+                return {
+                    "success": False,
+                    "error": "No layers to mix",
+                    "message": "No audio layers were loaded"
+                }
+            
+            for audio in layer_audio.values():
+                mixed += audio
+            
+            # Normalize
+            mixed = mixed / num_layers
+            
+            # Ensure output directory exists (if a directory is specified)
+            output_dir = os.path.dirname(output_path)
+            if output_dir:
+                os.makedirs(output_dir, exist_ok=True)
+            
+            # Save output
+            sf.write(output_path, mixed, sr)
+            
+            return {
+                "success": True,
+                "output_path": output_path,
+                "replaced_layer": layer_to_replace,
+                "sample_rate": sr,
+                "duration": float(max_length / sr),
+                "message": f"Successfully replaced {layer_to_replace} layer"
+            }
+        finally:
+            # Clean up temporary directory
+            shutil.rmtree(temp_dir, ignore_errors=True)
         
     except Exception as e:
         return {
@@ -466,6 +508,11 @@ def modify_layer(
             reverb_response[-1] = decay
             
             modified = np.convolve(modified, reverb_response, mode='same')
+            # Normalize reverb output to avoid harsh clipping from convolution overs
+            peak = np.max(np.abs(modified))
+            if peak > 1.0:
+                modified = modified / peak
+                applied_params["reverb_peak_before_normalization"] = float(peak)
             applied_params["decay"] = decay
         else:
             return {
@@ -477,8 +524,10 @@ def modify_layer(
         # Clip to prevent distortion
         modified = np.clip(modified, -1.0, 1.0)
         
-        # Ensure output directory exists
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        # Ensure output directory exists (if a directory is specified)
+        output_dir = os.path.dirname(output_path)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
         
         # Save output
         sf.write(output_path, modified, sr)
@@ -564,8 +613,9 @@ def mix_layers(
             if max_val > 0:
                 mixed = mixed / max_val
         
-        # Ensure output directory exists
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        # Ensure output directory exists (handle case where output_path has no directory component)
+        output_dir = os.path.dirname(output_path) or "."
+        os.makedirs(output_dir, exist_ok=True)
         
         # Save output
         sf.write(output_path, mixed, sr)

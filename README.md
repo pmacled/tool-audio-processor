@@ -313,10 +313,10 @@ To check if GPU is being used, look for `"device": "cuda:0"` in the tool respons
 
 ## Performance Notes
 
-- **Demucs separation**: ~30-60 seconds per 3-minute song on GPU, longer on CPU
-- **Audio analysis**: ~5-10 seconds per file
-- **Effect application**: Near real-time
-- **MIDI synthesis**: Depends on MIDI complexity
+- **Demucs separation**: On a modern mid-range NVIDIA GPU (for example, an RTX 30-series card), ~30-60 seconds per 3-minute song. Performance will vary significantly based on GPU model, CPU, storage, driver/CUDA versions, and load; expect slower runtimes on older or lower-end hardware and on CPU-only setups.
+- **Audio analysis**: ~5-10 seconds per file on typical developer hardware
+- **Effect application**: Near real-time on typical developer hardware
+- **MIDI synthesis**: Depends on MIDI complexity and synthesis settings
 
 ## Troubleshooting
 

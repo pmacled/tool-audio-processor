@@ -7,6 +7,7 @@ services:
     container_name: audio-processor-mcp
     stdin_open: true
     tty: true
+    user: "${UID:-1000}:${GID:-1000}"
     volumes:
       - ./input:/app/input
       - ./output:/app/output

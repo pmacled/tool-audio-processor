@@ -429,44 +429,47 @@ def modify_layer(
     audio_path: str,
     effect: str,
     output_path: str = "/app/output/modified.wav",
-    **effect_params
+    steps: Optional[int] = 0,
+    rate: Optional[float] = 1.0,
+    target_db: Optional[float] = -20.0,
+    fade_in: Optional[float] = 0.0,
+    fade_out: Optional[float] = 0.0,
+    decay: Optional[float] = 0.5
 ) -> Dict[str, Any]:
     """
     Apply audio effects to a layer.
-    
+
     Args:
         audio_path: Path to the audio file to modify
         effect: Effect to apply - "pitch_shift", "time_stretch", "reverb", "normalize", "fade"
         output_path: Path to save modified audio
-        effect_params: Effect-specific parameters:
-            - pitch_shift: steps (int, semitones)
-            - time_stretch: rate (float, speed multiplier)
-            - fade: fade_in (float, seconds), fade_out (float, seconds)
-            - normalize: target_db (float, dB level)
-    
+        steps: Semitones to shift pitch (for pitch_shift effect, default: 0)
+        rate: Speed multiplier (for time_stretch effect, default: 1.0)
+        target_db: Target dB level (for normalize effect, default: -20.0)
+        fade_in: Fade in duration in seconds (for fade effect, default: 0.0)
+        fade_out: Fade out duration in seconds (for fade effect, default: 0.0)
+        decay: Reverb decay amount (for reverb effect, default: 0.5)
+
     Returns:
         Dictionary with path to modified audio and metadata
     """
     try:
         # Load audio
         y, sr = librosa.load(audio_path, sr=None)
-        
+
         modified = y.copy()
         applied_params = {}
-        
+
         # Apply effects
         if effect == "pitch_shift":
-            steps = effect_params.get("steps", 0)
             modified = librosa.effects.pitch_shift(y, sr=sr, n_steps=steps)
             applied_params["steps"] = steps
-            
+
         elif effect == "time_stretch":
-            rate = effect_params.get("rate", 1.0)
             modified = librosa.effects.time_stretch(y, rate=rate)
             applied_params["rate"] = rate
-            
+
         elif effect == "normalize":
-            target_db = effect_params.get("target_db", -20.0)
             # Calculate current RMS
             rms = np.sqrt(np.mean(modified**2))
             current_db = 20 * np.log10(rms) if rms > 0 else -100
@@ -476,37 +479,33 @@ def modify_layer(
             modified = modified * gain
             applied_params["target_db"] = target_db
             applied_params["gain_applied"] = float(gain)
-            
+
         elif effect == "fade":
-            fade_in = effect_params.get("fade_in", 0.0)
-            fade_out = effect_params.get("fade_out", 0.0)
-            
             fade_in_samples = int(fade_in * sr)
             fade_out_samples = int(fade_out * sr)
-            
+
             # Apply fade in
             if fade_in_samples > 0:
                 fade_in_curve = np.linspace(0, 1, fade_in_samples)
                 modified[:fade_in_samples] *= fade_in_curve
-            
+
             # Apply fade out
             if fade_out_samples > 0:
                 fade_out_curve = np.linspace(1, 0, fade_out_samples)
                 modified[-fade_out_samples:] *= fade_out_curve
-            
+
             applied_params["fade_in"] = fade_in
             applied_params["fade_out"] = fade_out
-            
+
         elif effect == "reverb":
             # Simple reverb using convolution (simplified)
             # In production, you'd want a proper reverb implementation
-            decay = effect_params.get("decay", 0.5)
             delay_samples = int(0.05 * sr)  # 50ms delay
-            
+
             reverb_response = np.zeros(delay_samples)
             reverb_response[0] = 1.0
             reverb_response[-1] = decay
-            
+
             modified = np.convolve(modified, reverb_response, mode='same')
             # Normalize reverb output to avoid harsh clipping from convolution overs
             peak = np.max(np.abs(modified))

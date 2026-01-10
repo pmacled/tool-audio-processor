@@ -35,8 +35,8 @@ RUN curl -fsS https://bootstrap.pypa.io/get-pip.py -o get-pip.py \
 # Upgrade pip, setuptools, and wheel
 RUN python3.12 -m pip install --upgrade pip setuptools wheel
 
-# Set working directory
-WORKDIR /workspace
+# Set working directory to /app for container's internal files
+WORKDIR /app
 
 # Copy requirements first for better caching
 COPY requirements.txt .
@@ -53,5 +53,5 @@ COPY . .
 # Expose MCP server port (if needed for stdio, this is optional)
 # The MCP server typically uses stdio for communication
 
-# Set the entrypoint to run the MCP server
-ENTRYPOINT ["python", "server.py"]
+# Set the entrypoint to run the MCP server from /app
+ENTRYPOINT ["python", "/app/server.py"]

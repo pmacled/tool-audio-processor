@@ -81,7 +81,7 @@ Add this to your MCP client configuration (e.g., Claude Code). Choose either the
         "${PWD}/input:/app/input",
         "-v",
         "${PWD}/output:/app/output",
-        "audio-processor-mcp"
+        "ghcr.io/pmacled/tool-audio-processor:latest"
       ],
       "description": "MCP server for audio layer manipulation with CUDA acceleration"
     }
@@ -106,7 +106,7 @@ Add this to your MCP client configuration (e.g., Claude Code). Choose either the
         "${PWD}/input:/app/input",
         "-v",
         "${PWD}/output:/app/output",
-        "audio-processor-mcp"
+        "ghcr.io/pmacled/tool-audio-processor:latest"
       ],
       "description": "MCP server for audio layer manipulation (CPU-only)"
     }

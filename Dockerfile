@@ -10,12 +10,12 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # Install Python 3.12 and system dependencies
 RUN apt-get update && apt-get install -y \
     software-properties-common \
+    curl \
     && add-apt-repository ppa:deadsnakes/ppa \
     && apt-get update && apt-get install -y \
     python3.12 \
     python3.12-venv \
     python3.12-dev \
-    python3-pip \
     ffmpeg \
     libsndfile1 \
     fluidsynth \
@@ -27,7 +27,12 @@ RUN apt-get update && apt-get install -y \
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1 \
     && update-alternatives --install /usr/bin/python python /usr/bin/python3.12 1
 
-# Upgrade pip
+# Install pip for Python 3.12 using get-pip.py
+RUN curl -fsS https://bootstrap.pypa.io/get-pip.py -o get-pip.py \
+    && python3.12 get-pip.py \
+    && rm get-pip.py
+
+# Upgrade pip, setuptools, and wheel
 RUN python3.12 -m pip install --upgrade pip setuptools wheel
 
 # Set working directory

@@ -51,14 +51,16 @@ docker-compose up
 #### With GPU Support
 
 ```bash
-docker run --gpus all -i -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output audio-processor-mcp
+docker run --gpus all -i --user $(id -u):$(id -g) -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output audio-processor-mcp
 ```
 
 #### CPU Only
 
 ```bash
-docker run -i -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output audio-processor-mcp
+docker run -i --user $(id -u):$(id -g) -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output audio-processor-mcp
 ```
+
+**Note:** The `--user $(id -u):$(id -g)` flag ensures the container runs as your user, preventing permission issues with mounted volumes.
 
 ### MCP Client Configuration
 
@@ -75,6 +77,8 @@ Add this to your MCP client configuration (e.g., Claude Code). Choose either the
         "run",
         "--rm",
         "-i",
+        "--user",
+        "1000:1000",
         "--gpus",
         "all",
         "-v",
@@ -102,6 +106,8 @@ Add this to your MCP client configuration (e.g., Claude Code). Choose either the
         "run",
         "--rm",
         "-i",
+        "--user",
+        "1000:1000",
         "-v",
         "${PWD}/input:/app/input",
         "-v",
@@ -114,7 +120,9 @@ Add this to your MCP client configuration (e.g., Claude Code). Choose either the
 }
 ```
 
-**Note**: Processing will be slower without GPU acceleration, but works on any system with Docker.
+**Notes**:
+- Processing will be slower without GPU acceleration, but works on any system with Docker.
+- The `--user 1000:1000` flag prevents permission issues with mounted volumes. If you have a different UID/GID, run `id -u` and `id -g` to find your values and update accordingly.
 
 See `mcp-config.json` for both configurations.
 
@@ -349,6 +357,27 @@ To check if GPU is being used, look for `"device": "cuda:0"` in the tool respons
 - **MIDI synthesis**: Depends on MIDI complexity and synthesis settings
 
 ## Troubleshooting
+
+### Permission Denied Errors
+
+If you get permission errors when writing to input/output directories:
+
+**Using docker-compose:**
+The compose file uses `${UID:-1000}:${GID:-1000}` to run as your user. Ensure these environment variables are set:
+```bash
+export UID=$(id -u)
+export GID=$(id -g)
+docker-compose up
+```
+
+**Using docker run:**
+Make sure to include the `--user` flag:
+```bash
+docker run --user $(id -u):$(id -g) ...
+```
+
+**Using MCP client:**
+Update the `--user` value in your MCP config to match your UID:GID (run `id -u` and `id -g` to find these values).
 
 ### GPU Not Detected
 

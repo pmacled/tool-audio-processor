@@ -28,7 +28,9 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
     && update-alternatives --install /usr/bin/python python /usr/bin/python3.12 1
 
 # Install pip for Python 3.12 using get-pip.py
-RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.12
+RUN curl -fsS https://bootstrap.pypa.io/get-pip.py -o get-pip.py \
+    && python3.12 get-pip.py \
+    && rm get-pip.py
 
 # Upgrade pip, setuptools, and wheel
 RUN python3.12 -m pip install --upgrade pip setuptools wheel

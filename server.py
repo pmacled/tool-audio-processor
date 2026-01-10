@@ -229,6 +229,34 @@ def synthesize_instrument_layer(
     try:
         # Load MIDI file using pretty_midi
         midi_data = pretty_midi.PrettyMIDI(midi_path)
+
+        # Optionally override instrument programs based on requested instrument
+        if instrument:
+            instrument_program_map = {
+                "piano": 0,                 # Acoustic Grand Piano
+                "acoustic grand piano": 0,
+                "bright piano": 1,          # Bright Acoustic Piano
+                "electric piano": 4,        # Electric Piano 1
+                "e-piano": 4,
+                "organ": 16,                # Drawbar Organ
+                "guitar": 24,               # Nylon Acoustic Guitar
+                "acoustic guitar": 24,
+                "electric guitar": 27,      # Electric Guitar (clean)
+                "violin": 40,
+                "viola": 41,
+                "cello": 42,
+                "bass": 32,                 # Acoustic Bass
+                "synth bass": 38,           # Synth Bass 1
+                "flute": 73,
+                "sax": 65,                  # Alto Sax
+                "trumpet": 56,
+            }
+            program = instrument_program_map.get(str(instrument).lower())
+            if program is not None:
+                for inst in midi_data.instruments:
+                    inst.program = program
+                    # Ensure we treat this as a pitched instrument, not percussion
+                    inst.is_drum = False
         
         # Synthesize audio
         audio = midi_data.fluidsynth(fs=sample_rate)

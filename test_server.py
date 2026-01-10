@@ -62,16 +62,44 @@ def test_mcp_decorator():
     
     try:
         with open("server.py", "r") as f:
-            content = f.read()
-        
-        decorator_count = content.count("@mcp.tool()")
-        print(f"Found {decorator_count} @mcp.tool() decorators")
-        
-        if decorator_count >= 6:
-            print("✓ All tools appear to be decorated")
+            lines = f.readlines()
+
+        required_tools = [
+            "separate_audio_layers",
+            "analyze_layer",
+            "synthesize_instrument_layer",
+            "replace_layer",
+            "modify_layer",
+            "mix_layers",
+        ]
+
+        decorated_tools = set()
+
+        for i, line in enumerate(lines):
+            # Look for the @mcp.tool() decorator
+            if line.lstrip().startswith("@mcp.tool()"):
+                # Find the next non-empty line after the decorator
+                j = i + 1
+                while j < len(lines) and lines[j].strip() == "":
+                    j += 1
+                if j < len(lines):
+                    next_line = lines[j].lstrip()
+                    if next_line.startswith("def "):
+                        for tool in required_tools:
+                            if next_line.startswith(f"def {tool}("):
+                                decorated_tools.add(tool)
+
+        print(
+            f"Found {len(decorated_tools)} decorated tools: "
+            + (", ".join(sorted(decorated_tools)) if decorated_tools else "none")
+        )
+
+        missing_tools = [tool for tool in required_tools if tool not in decorated_tools]
+        if not missing_tools:
+            print("✓ All required tools are decorated with @mcp.tool()")
             return True
         else:
-            print("✗ Missing tool decorators")
+            print("✗ Missing decorators for: " + ", ".join(missing_tools))
             return False
     except Exception as e:
         print(f"✗ Error: {e}")

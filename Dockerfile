@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     ffmpeg \
     libsndfile1 \
+    fluidsynth \
     git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*

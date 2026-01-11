@@ -1105,12 +1105,12 @@ def refine_midi(
                     quantized_time = round(note['time'] / quantize_ticks) * quantize_ticks
                     note['time'] = int(quantized_time)
 
-            if "transpose" in operations:
+            if "transpose" in operations and transpose != 0:
                 # Transpose notes
                 for note in notes:
                     note['note'] = max(0, min(127, note['note'] + transpose))
 
-            if "tempo_scale" in operations:
+            if "tempo_scale" in operations and tempo_scale != 1.0:
                 # Scale timing
                 for note in notes:
                     note['time'] = int(note['time'] * tempo_scale)

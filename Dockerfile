@@ -5,7 +5,13 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    NUMBA_CACHE_DIR=/tmp/numba_cache \
+    LIBROSA_CACHE_DIR=/tmp/librosa_cache \
+    HF_HOME=/tmp/huggingface \
+    TORCH_HOME=/tmp/torch \
+    XDG_CACHE_HOME=/tmp/cache \
+    MPLCONFIGDIR=/tmp/matplotlib
 
 # Install Python 3.12 and system dependencies
 RUN apt-get update && apt-get install -y \
@@ -49,6 +55,10 @@ RUN pip install -r requirements.txt
 
 # Copy application code
 COPY . .
+
+# Create cache directories with proper permissions
+RUN mkdir -p /tmp/numba_cache /tmp/librosa_cache /tmp/huggingface /tmp/torch /tmp/cache /tmp/matplotlib \
+    && chmod -R 755 /tmp/numba_cache /tmp/librosa_cache /tmp/huggingface /tmp/torch /tmp/cache /tmp/matplotlib
 
 # Expose MCP server port (if needed for stdio, this is optional)
 # The MCP server typically uses stdio for communication

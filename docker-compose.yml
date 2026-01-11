@@ -7,10 +7,14 @@ services:
     container_name: audio-processor-mcp
     stdin_open: true
     tty: true
-    user: "${UID:-1000}:${GID:-1000}"
     working_dir: /workspace
     volumes:
       - .:/workspace
+    environment:
+      - HOST_UID=${UID:-1000}
+      - HOST_GID=${GID:-1000}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - PYTHONUNBUFFERED=1
     deploy:
       resources:
         reservations:
@@ -18,6 +22,3 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - PYTHONUNBUFFERED=1

@@ -51,12 +51,12 @@ def fix_ownership(path):
     """Change ownership of path to match /workspace owner."""
     uid, gid = get_workspace_owner()
     if uid is not None and gid is not None:
-        # Check if path exists before attempting to change ownership
-        if not os.path.exists(path):
-            print(f"Warning: Path does not exist, skipping ownership change: {path}", flush=True)
-            return
-        
         try:
+            # Check if path exists and get its type
+            if not os.path.exists(path):
+                print(f"Warning: Path does not exist, skipping ownership change: {path}", flush=True)
+                return
+            
             # If path is a directory, chown recursively
             if os.path.isdir(path):
                 for root, dirs, files in os.walk(path):
@@ -65,8 +65,6 @@ def fix_ownership(path):
                         os.chown(os.path.join(root, f), uid, gid)
             else:
                 os.chown(path, uid, gid)
-        except FileNotFoundError:
-            print(f"Warning: Path not found while changing ownership: {path}", flush=True)
         except PermissionError as e:
             print(f"Warning: Permission denied while changing ownership of {path}: {e}", flush=True)
         except Exception as e:

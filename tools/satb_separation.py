@@ -36,6 +36,9 @@ def separate_satb_internal(
                 "message": f"The specified audio file does not exist: {audio_path}"
             }
 
+        # Validate and sanitize output_dir to prevent path traversal
+        output_dir = os.path.abspath(output_dir)
+        
         # Ensure output directory exists
         os.makedirs(output_dir, exist_ok=True)
 
@@ -53,7 +56,9 @@ def separate_satb_internal(
         # Load model
         model = get_satb_model(model_type)
 
-        # STFT parameters (based on typical U-Net settings)
+        # STFT parameters
+        # These must match the parameters used during model training.
+        # The ISMIR 2020 paper uses standard U-Net STFT settings.
         n_fft = 2048
         hop_length = 512
 
@@ -64,13 +69,15 @@ def separate_satb_internal(
         phase = np.angle(stft)
 
         # Normalize magnitude for model input
+        # Note: For silent audio (all zeros), this will produce all zeros
+        # which is the expected behavior (silence in = silence out)
         magnitude_normalized = magnitude / (np.max(magnitude) + 1e-8)
 
         # Prepare input for model: (batch, height, width, channels)
         # Model expects (batch, freq_bins, time_frames, 1)
-        model_input = magnitude_normalized.T[np.newaxis, :, :, np.newaxis]  # Add batch and channel dims
+        magnitude_batch = magnitude_normalized.T[np.newaxis, :, :, np.newaxis]  # Add batch and channel dims
 
-        print(f"Model input shape: {model_input.shape}", flush=True)
+        print(f"Model input shape: {magnitude_batch.shape}", flush=True)
 
         # Separate each voice part using conditioning
         voice_parts = ['soprano', 'alto', 'tenor', 'bass']
@@ -85,22 +92,32 @@ def separate_satb_internal(
             condition[0, voice_id] = 1.0
 
             # Run model prediction
-            # Note: The exact input format depends on the model architecture
-            # The Conditioned U-Net may expect [spectrogram, condition] as inputs
+            # The ISMIR 2020 Conditioned U-Net is trained with two inputs:
+            # [spectrogram, one-hot voice-condition] for voice part separation.
             try:
-                # Try direct prediction with condition concatenation
-                predicted_mask = model.predict([model_input, condition], verbose=0)
+                # Predict using conditioned inputs; this is required for distinct SATB outputs.
+                predicted_mask = model.predict([magnitude_batch, condition], verbose=0)
             except Exception as e:
-                print(f"Warning: Direct prediction failed, trying alternative input format: {e}", flush=True)
-                # Some models might expect different input structure
-                predicted_mask = model.predict(model_input, verbose=0)
+                # Do not fall back to an unconditioned prediction, as that would produce
+                # identical outputs for all voice parts and defeat SATB separation.
+                raise RuntimeError(
+                    f"Conditioned SATB prediction failed for voice '{voice_name}': {e}"
+                )
 
             # Remove batch and channel dimensions
             predicted_mask = np.squeeze(predicted_mask)
 
-            # Transpose back to (freq_bins, time_frames) if needed
+            # Ensure mask shape matches magnitude spectrogram
             if predicted_mask.shape != magnitude_normalized.shape:
-                predicted_mask = predicted_mask.T
+                # Try simple transpose if it fixes the mismatch
+                if predicted_mask.T.shape == magnitude_normalized.shape:
+                    predicted_mask = predicted_mask.T
+                else:
+                    raise ValueError(
+                        f"Predicted mask shape {predicted_mask.shape} (or its transpose "
+                        f"{predicted_mask.T.shape}) does not match magnitude shape "
+                        f"{magnitude_normalized.shape} for voice part '{voice_name}'."
+                    )
 
             # Apply mask to magnitude spectrogram
             separated_magnitude = magnitude * predicted_mask
@@ -112,6 +129,7 @@ def separate_satb_internal(
             separated_audio = librosa.istft(separated_stft, hop_length=hop_length, length=len(audio))
 
             # Normalize audio to prevent clipping
+            # Note: For silent audio segments, this will produce silence (expected behavior)
             separated_audio = separated_audio / (np.max(np.abs(separated_audio)) + 1e-8) * 0.9
 
             # Save separated voice

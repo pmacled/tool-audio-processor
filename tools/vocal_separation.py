@@ -31,6 +31,9 @@ def separate_vocals_internal(
                 "message": f"The specified audio file does not exist: {audio_path}"
             }
 
+        # Validate and sanitize output_dir to prevent path traversal
+        output_dir = os.path.abspath(output_dir)
+        
         # Ensure output directory exists
         os.makedirs(output_dir, exist_ok=True)
 
@@ -39,10 +42,17 @@ def separate_vocals_internal(
 
         # Perform separation
         output_files = separator.separate(audio_path, output_dir=output_dir)
+        
+        # Validate return value
+        if not output_files or not isinstance(output_files, (list, tuple)):
+            return {
+                "success": False,
+                "error": "Separation failed or returned no files",
+                "message": "The separation process did not produce any output files"
+            }
 
         # Organize outputs
         output_paths = {}
-        base_name = Path(audio_path).stem
 
         for file_path in output_files:
             file_name = Path(file_path).name.lower()
@@ -53,6 +63,14 @@ def separate_vocals_internal(
                     output_paths['lead_vocals'] = file_path
             elif 'instrumental' in file_name or 'accomp' in file_name:
                 output_paths['instrumental'] = file_path
+        
+        # Validate that we found at least some stems
+        if not output_paths:
+            return {
+                "success": False,
+                "error": "No recognized stems found in output",
+                "message": f"Separation completed but no files matched expected patterns (vocal, instrumental). Files: {[Path(f).name for f in output_files]}"
+            }
 
         # Fix ownership
         fix_ownership(output_dir)

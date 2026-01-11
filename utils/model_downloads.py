@@ -1,5 +1,4 @@
 """Utilities for downloading and managing model weights."""
-import os
 from pathlib import Path
 
 MODEL_DIR = Path(__file__).parent.parent / "models"
@@ -53,11 +52,12 @@ def download_satb_models():
         try:
             # Download from Google Drive using file ID
             url = f"https://drive.google.com/uc?id={file_id}"
-            gdown.download(url, str(model_path), quiet=False, fuzzy=True)
+            gdown.download(url, str(model_path), quiet=False)
             print(f"✓ {model_name} downloaded successfully", flush=True)
         except Exception as e:
             print(f"✗ Failed to download {model_name}: {e}", flush=True)
             print(f"Manual download: https://drive.google.com/file/d/{file_id}/view", flush=True)
             print(f"Or visit: https://drive.google.com/drive/folders/1zqdSLCGJ7cqw7oCP6iEhh3t2uIY9sC31", flush=True)
+            raise
 
     print(f"SATB models directory: {satb_dir}", flush=True)

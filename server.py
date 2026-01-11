@@ -698,6 +698,93 @@ def mix_layers(
         }
 
 
+def _create_midi_from_notes(midi_notes, output_midi_path, tempo, min_note_duration):
+    """
+    Helper function to create a MIDI file from a list of note tuples.
+    
+    Args:
+        midi_notes: List of (time, note) or (time, note, confidence) tuples
+        output_midi_path: Path to save the MIDI file
+        tempo: Tempo in BPM
+        min_note_duration: Minimum note duration in seconds for filtering
+    
+    Returns:
+        Tuple of (note_count, pitch_min, pitch_max)
+    """
+    from mido import MidiFile, MidiTrack, Message, MetaMessage
+    
+    # Create MIDI file
+    midi_file = MidiFile()
+    track = MidiTrack()
+    midi_file.tracks.append(track)
+    
+    # Set tempo
+    microseconds_per_beat = int(60_000_000 / tempo)
+    track.append(MetaMessage('set_tempo', tempo=microseconds_per_beat, time=0))
+    
+    # Add notes
+    if midi_notes:
+        # Normalize midi_notes to (time, note) tuples if they have confidence
+        normalized_notes = []
+        for note_data in midi_notes:
+            if len(note_data) == 3:
+                # (time, note, confidence) - extract time and note
+                normalized_notes.append((note_data[0], note_data[1]))
+            else:
+                # Already (time, note)
+                normalized_notes.append(note_data)
+        
+        ticks_per_second = midi_file.ticks_per_beat * tempo / 60
+        last_event_time = 0
+        
+        # Process notes by grouping consecutive same-pitch notes
+        i = 0
+        while i < len(normalized_notes):
+            current_start, current_note = normalized_notes[i]
+            
+            # Find where this note ends (when pitch changes or list ends)
+            j = i + 1
+            while j < len(normalized_notes) and normalized_notes[j][1] == current_note:
+                j += 1
+            
+            # Calculate note duration
+            if j < len(normalized_notes):
+                note_duration = normalized_notes[j][0] - current_start
+            else:
+                # Last note - use min_note_duration
+                note_duration = min_note_duration
+            
+            # Only add note if it meets minimum duration
+            if note_duration >= min_note_duration:
+                # Add note on
+                abs_start_time = int(current_start * ticks_per_second)
+                delta_time = abs_start_time - last_event_time
+                track.append(Message('note_on', note=current_note, velocity=64, time=delta_time))
+                last_event_time = abs_start_time
+                
+                # Add note off
+                abs_end_time = int((current_start + note_duration) * ticks_per_second)
+                delta_time = abs_end_time - last_event_time
+                track.append(Message('note_off', note=current_note, velocity=64, time=delta_time))
+                last_event_time = abs_end_time
+            
+            # Move to next different note
+            i = j
+        
+        # Save MIDI file
+        midi_file.save(output_midi_path)
+        
+        # Get statistics
+        note_count = len([msg for msg in track if msg.type == 'note_on' and msg.velocity > 0])
+        all_pitches = [msg.note for msg in track if msg.type == 'note_on' and msg.velocity > 0]
+        pitch_min = min(all_pitches) if all_pitches else 0
+        pitch_max = max(all_pitches) if all_pitches else 0
+        
+        return note_count, pitch_min, pitch_max
+    else:
+        return 0, 0, 0
+
+
 @mcp.tool()
 def extract_melody_to_midi(
     audio_path: str,
@@ -799,73 +886,11 @@ def extract_melody_to_midi(
                         midi_note = int(round(librosa.hz_to_midi(f)))
                         midi_notes.append((time[i], midi_note, conf))
 
-                # Create MIDI file using mido
-                midi_file = MidiFile()
-                track = MidiTrack()
-                midi_file.tracks.append(track)
-
-                # Set tempo
-                microseconds_per_beat = int(60_000_000 / tempo)
-                track.append(MetaMessage('set_tempo', tempo=microseconds_per_beat, time=0))
-
-                # Add notes (simplified: just note on/off events)
+                # Create MIDI file using helper function
                 if midi_notes:
-                    current_note = None
-                    current_start = 0
-                    ticks_per_second = midi_file.ticks_per_beat * tempo / 60
-                    last_event_time = 0
-
-                    for i, (t, note, conf) in enumerate(midi_notes):
-                        if current_note is None:
-                            # Start new note
-                            current_note = note
-                            current_start = t
-                        elif note != current_note or i == len(midi_notes) - 1:
-                            # End previous note
-                            note_duration = t - current_start
-
-                            # Filter short notes
-                            if note_duration >= min_note_duration:
-                                # Calculate delta time from last event
-                                abs_start_time = int(current_start * ticks_per_second)
-                                delta_time = abs_start_time - last_event_time
-                                track.append(Message('note_on', note=current_note, velocity=64, time=delta_time))
-                                last_event_time = abs_start_time
-
-                                abs_end_time = int((current_start + note_duration) * ticks_per_second)
-                                delta_time = abs_end_time - last_event_time
-                                track.append(Message('note_off', note=current_note, velocity=64, time=delta_time))
-                                last_event_time = abs_end_time
-
-                            # Start new note (unless this is the last iteration and we just ended the final note)
-                            if i < len(midi_notes) - 1:
-                                current_note = note
-                                current_start = t
-                            else:
-                                # Handle the very last note
-                                if note != current_note:
-                                    current_note = note
-                                    current_start = t
-                                    # Add the final note
-                                    abs_start_time = int(current_start * ticks_per_second)
-                                    delta_time = abs_start_time - last_event_time
-                                    track.append(Message('note_on', note=current_note, velocity=64, time=delta_time))
-                                    last_event_time = abs_start_time
-                                    
-                                    # Estimate end time (use min_note_duration)
-                                    abs_end_time = int((current_start + min_note_duration) * ticks_per_second)
-                                    delta_time = abs_end_time - last_event_time
-                                    track.append(Message('note_off', note=current_note, velocity=64, time=delta_time))
-                                    last_event_time = abs_end_time
-
-                    # Save MIDI file
-                    midi_file.save(output_midi_path)
-
-                    # Get statistics
-                    note_count = len([msg for msg in track if msg.type == 'note_on' and msg.velocity > 0])
-                    all_pitches = [msg.note for msg in track if msg.type == 'note_on' and msg.velocity > 0]
-                    pitch_min = min(all_pitches) if all_pitches else 0
-                    pitch_max = max(all_pitches) if all_pitches else 0
+                    note_count, pitch_min, pitch_max = _create_midi_from_notes(
+                        midi_notes, output_midi_path, tempo, min_note_duration
+                    )
                 else:
                     return {
                         "success": False,
@@ -902,69 +927,11 @@ def extract_melody_to_midi(
                     midi_note = int(round(librosa.hz_to_midi(f)))
                     midi_notes.append((times[i], midi_note))
 
-            # Create MIDI file
-            midi_file = MidiFile()
-            track = MidiTrack()
-            midi_file.tracks.append(track)
-
-            # Set tempo
-            microseconds_per_beat = int(60_000_000 / tempo)
-            track.append(MetaMessage('set_tempo', tempo=microseconds_per_beat, time=0))
-
-            # Add notes
+            # Create MIDI file using helper function
             if midi_notes:
-                current_note = None
-                current_start = 0
-                ticks_per_second = midi_file.ticks_per_beat * tempo / 60
-                last_event_time = 0
-
-                for i, (t, note) in enumerate(midi_notes):
-                    if current_note is None:
-                        current_note = note
-                        current_start = t
-                    elif note != current_note or i == len(midi_notes) - 1:
-                        note_duration = t - current_start
-
-                        if note_duration >= min_note_duration:
-                            # Calculate delta time from last event
-                            abs_start_time = int(current_start * ticks_per_second)
-                            delta_time = abs_start_time - last_event_time
-                            track.append(Message('note_on', note=current_note, velocity=64, time=delta_time))
-                            last_event_time = abs_start_time
-
-                            abs_end_time = int((current_start + note_duration) * ticks_per_second)
-                            delta_time = abs_end_time - last_event_time
-                            track.append(Message('note_off', note=current_note, velocity=64, time=delta_time))
-                            last_event_time = abs_end_time
-
-                        # Start new note (unless this is the last iteration and we just ended the final note)
-                        if i < len(midi_notes) - 1:
-                            current_note = note
-                            current_start = t
-                        else:
-                            # Handle the very last note
-                            if note != current_note:
-                                current_note = note
-                                current_start = t
-                                # Add the final note
-                                abs_start_time = int(current_start * ticks_per_second)
-                                delta_time = abs_start_time - last_event_time
-                                track.append(Message('note_on', note=current_note, velocity=64, time=delta_time))
-                                last_event_time = abs_start_time
-                                
-                                # Estimate end time (use min_note_duration)
-                                abs_end_time = int((current_start + min_note_duration) * ticks_per_second)
-                                delta_time = abs_end_time - last_event_time
-                                track.append(Message('note_off', note=current_note, velocity=64, time=delta_time))
-                                last_event_time = abs_end_time
-
-                midi_file.save(output_midi_path)
-
-                # Get statistics
-                note_count = len([msg for msg in track if msg.type == 'note_on' and msg.velocity > 0])
-                all_pitches = [msg.note for msg in track if msg.type == 'note_on' and msg.velocity > 0]
-                pitch_min = min(all_pitches) if all_pitches else 0
-                pitch_max = max(all_pitches) if all_pitches else 0
+                note_count, pitch_min, pitch_max = _create_midi_from_notes(
+                    midi_notes, output_midi_path, tempo, min_note_duration
+                )
             else:
                 return {
                     "success": False,
@@ -1020,12 +987,13 @@ def refine_midi(
     Args:
         midi_path: Path to the MIDI file to refine
         output_path: Path to save refined MIDI (default: ./output/refined.mid)
-        operations: List of operations to apply (default: ["quantize", "remove_short_notes", "smooth_velocities"])
+        operations: List of operations to apply (default: ["quantize", "remove_short_notes", "smooth_velocities"]).
+            Available operations: "quantize", "remove_short_notes", "smooth_velocities"
         quantize_grid: Note duration for quantization - "32nd", "16th", "8th", "quarter" (default: 16th)
         min_note_duration: Minimum note length in seconds (default: 0.1)
         velocity_smoothing: Window size for velocity smoothing (default: 5)
-        transpose: Semitones to transpose (+/-) (default: 0)
-        tempo_scale: Time stretch factor (default: 1.0)
+        transpose: Semitones to transpose (+/-). Applied automatically when non-zero (default: 0)
+        tempo_scale: Time stretch factor. Applied automatically when not 1.0 (default: 1.0)
 
     Returns:
         Dictionary with refined MIDI path, operations applied, and note counts
@@ -1105,12 +1073,12 @@ def refine_midi(
                     quantized_time = round(note['time'] / quantize_ticks) * quantize_ticks
                     note['time'] = int(quantized_time)
 
-            if "transpose" in operations and transpose != 0:
+            if transpose != 0:
                 # Transpose notes
                 for note in notes:
                     note['note'] = max(0, min(127, note['note'] + transpose))
 
-            if "tempo_scale" in operations and tempo_scale != 1.0:
+            if tempo_scale != 1.0:
                 # Scale timing
                 for note in notes:
                     note['time'] = int(note['time'] * tempo_scale)
@@ -1165,20 +1133,21 @@ def refine_midi(
             # Preserve non-note messages (e.g., program changes, control changes, other meta)
             preserved_events = []
             abs_time = 0
+            tempo_events_present = False
             for msg in track:
                 abs_time += msg.time
-                # Keep all messages except note events and set_tempo (which we explicitly re-add)
-                if not (
-                    msg.type in ('note_on', 'note_off') or
-                    (getattr(msg, "is_meta", False) and msg.type == 'set_tempo')
-                ):
+                # Keep all messages except note events; track whether any tempo changes exist
+                if not (msg.type in ('note_on', 'note_off')):
                     preserved_events.append((abs_time, msg.copy()))
+                    if getattr(msg, "is_meta", False) and msg.type == 'set_tempo':
+                        tempo_events_present = True
 
             # Rebuild track with relative timing
             track.clear()
 
-            # Re-add tempo message based on tempo_bpm at time 0
-            track.append(MetaMessage('set_tempo', tempo=int(60_000_000 / tempo_bpm), time=0))
+            # If no tempo events were present, add one based on tempo_bpm at time 0
+            if not tempo_events_present:
+                track.append(MetaMessage('set_tempo', tempo=int(60_000_000 / tempo_bpm), time=0))
 
             # Merge preserved non-note events with refined note events using absolute time
             merged_events = []
@@ -1310,6 +1279,14 @@ def export_notation(
             if score.parts:
                 first_part = score.parts[0]
 
+                # Add elements in the correct order: clef, key signature, time signature, tempo
+                # Insert in reverse order since insert(0, ...) puts each at the beginning
+                
+                # Add tempo marking (inserted last, so it appears last)
+                if tempo:
+                    tempo_mark = m21_tempo.MetronomeMark(number=tempo)
+                    first_part.insert(0, tempo_mark)
+
                 # Add time signature
                 if time_signature:
                     ts = meter.TimeSignature(time_signature)
@@ -1323,12 +1300,7 @@ def export_notation(
                     except (ValueError, TypeError):
                         pass  # Invalid key signature, skip
 
-                # Add tempo marking
-                if tempo:
-                    tempo_mark = m21_tempo.MetronomeMark(number=tempo)
-                    first_part.insert(0, tempo_mark)
-
-                # Set clef
+                # Set clef (inserted first, so it appears first)
                 clef_map = {
                     "treble": m21_clef.TrebleClef(),
                     "bass": m21_clef.BassClef(),
@@ -1352,7 +1324,7 @@ def export_notation(
                     return {
                         "success": False,
                         "error": str(e),
-                        "message": "PDF export requires LilyPond to be installed. Install with: sudo apt-get install lilypond"
+                        "message": "PDF export requires LilyPond to be installed. Visit http://lilypond.org for installation instructions for your platform."
                     }
 
             elif output_format == "png":
@@ -1363,7 +1335,7 @@ def export_notation(
                     return {
                         "success": False,
                         "error": str(e),
-                        "message": "PNG export requires LilyPond to be installed. Install with: sudo apt-get install lilypond"
+                        "message": "PNG export requires LilyPond to be installed. Visit http://lilypond.org for installation instructions for your platform."
                     }
 
             else:

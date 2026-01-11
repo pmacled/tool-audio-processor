@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     libsndfile1 \
     fluidsynth \
+    lilypond \
     git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*

@@ -38,7 +38,10 @@ def test_tool_definitions():
         "synthesize_instrument_layer",
         "replace_layer",
         "modify_layer",
-        "mix_layers"
+        "mix_layers",
+        "extract_melody_to_midi",
+        "refine_midi",
+        "export_notation"
     ]
     
     try:
@@ -89,6 +92,9 @@ def test_mcp_decorator():
             "replace_layer",
             "modify_layer",
             "mix_layers",
+            "extract_melody_to_midi",
+            "refine_midi",
+            "export_notation"
         ]
 
         decorated_tools = set()

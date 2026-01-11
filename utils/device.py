@@ -36,10 +36,10 @@ def get_demucs_model(model_name: str = 'mdx'):
     """
     global _demucs_models
 
-    # Validate model_name parameter
-    if not model_name or not isinstance(model_name, str):
+    # Validate model_name parameter - type check first
+    if not isinstance(model_name, str):
         raise ValueError(
-            f"Invalid model_name: must be a non-empty string, got {type(model_name).__name__}: {repr(model_name)}"
+            f"Invalid model_name: must be a string, got {type(model_name).__name__}: {repr(model_name)}"
         )
     
     # Strip whitespace to avoid silent failures

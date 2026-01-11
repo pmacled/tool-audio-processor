@@ -54,6 +54,18 @@ RUN pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu
 # Install other Python dependencies
 RUN pip install -r requirements.txt
 
+# Pre-download Demucs models during build to avoid runtime download delays
+RUN python -c "from demucs.pretrained import get_model; \
+    print('Downloading mdx model...'); \
+    get_model('mdx'); \
+    print('mdx model downloaded successfully'); \
+    print('Downloading htdemucs model...'); \
+    get_model('htdemucs'); \
+    print('htdemucs model downloaded successfully'); \
+    print('Downloading mdx_extra model...'); \
+    get_model('mdx_extra'); \
+    print('mdx_extra model downloaded successfully')"
+
 # Copy application code
 COPY . .
 

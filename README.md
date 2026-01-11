@@ -155,6 +155,7 @@ Separates audio into individual stems using the Demucs model.
 - `audio_path` (str): Path to input audio file
 - `output_dir` (str, optional): Output directory (default: ./output)
 - `model` (str, optional): Demucs model to use (default: mdx)
+  - Pre-installed models: `mdx` (default), `htdemucs`, `mdx_extra`
 
 **Returns:**
 ```json
@@ -499,6 +500,16 @@ To check if GPU is being used, look for `"device": "cuda:0"` in the tool respons
 - **Audio analysis**: ~5-10 seconds per file on typical developer hardware
 - **Effect application**: Near real-time on typical developer hardware
 - **MIDI synthesis**: Depends on MIDI complexity and synthesis settings
+
+## Available Demucs Models
+
+The container comes with three pre-downloaded Demucs models to ensure fast startup and avoid runtime delays:
+
+- **mdx** (default): Winning model on Track A at the MDX Challenge, trained only on MusDB HQ
+- **htdemucs**: Hybrid Transformer Demucs model, achieves 9.00 dB SDR on MUSDB HQ test set
+- **mdx_extra**: Ranked 2nd on Track B of the MDX Challenge, trained with extra training data including MusDB test set
+
+All models are pre-downloaded during Docker image build, so there are no download delays during first use. Model performance varies by use case and stem type.
 
 ## Troubleshooting
 

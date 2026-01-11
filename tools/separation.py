@@ -97,7 +97,11 @@ def register_tools(mcp: FastMCP):
             audio_path: Path to the input audio file
             output_dir: Directory to save separated layers (default: ./output)
             model: Demucs model to use (default: mdx)
-        
+                Pre-installed models:
+                - mdx (default): MDX Challenge Track A winner
+                - htdemucs: Hybrid Transformer Demucs, 9.00 dB SDR on MUSDB HQ
+                - mdx_extra: MDX Challenge Track B 2nd place
+
         Returns:
             Dictionary with paths to separated layer files and metadata
         """

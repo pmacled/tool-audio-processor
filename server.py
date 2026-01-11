@@ -52,7 +52,7 @@ def fix_ownership(path):
     uid, gid = get_workspace_owner()
     if uid is not None and gid is not None:
         try:
-            # Check if path exists and get its type
+            # Check if path exists and get its type (handles race conditions via try/except)
             if not os.path.exists(path):
                 print(f"Warning: Path does not exist, skipping ownership change: {path}", flush=True)
                 return
@@ -65,8 +65,6 @@ def fix_ownership(path):
                         os.chown(os.path.join(root, f), uid, gid)
             else:
                 os.chown(path, uid, gid)
-        except PermissionError as e:
-            print(f"Warning: Permission denied while changing ownership of {path}: {e}", flush=True)
         except Exception as e:
             # Log but don't fail - this is a best-effort operation
             print(f"Warning: Could not change ownership of {path}: {e}", flush=True)

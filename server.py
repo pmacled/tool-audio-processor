@@ -38,7 +38,12 @@ def get_workspace_owner():
         if uid > 0 and gid > 0:
             return uid, gid
         return None, None
-    except Exception:
+    except (TypeError, ValueError) as e:
+        print(
+            f"Warning: Invalid HOST_UID/HOST_GID environment values; "
+            f"skipping ownership changes: {e}",
+            flush=True,
+        )
         return None, None
 
 
@@ -51,8 +56,6 @@ def fix_ownership(path):
             if os.path.isdir(path):
                 for root, dirs, files in os.walk(path):
                     os.chown(root, uid, gid)
-                    for d in dirs:
-                        os.chown(os.path.join(root, d), uid, gid)
                     for f in files:
                         os.chown(os.path.join(root, f), uid, gid)
             else:

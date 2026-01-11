@@ -58,7 +58,7 @@ COPY . .
 
 # Create cache directories with proper permissions
 RUN mkdir -p /tmp/numba_cache /tmp/librosa_cache /tmp/huggingface /tmp/torch /tmp/cache /tmp/matplotlib \
-    && chmod -R 777 /tmp/numba_cache /tmp/librosa_cache /tmp/huggingface /tmp/torch /tmp/cache /tmp/matplotlib
+    && chmod -R 755 /tmp/numba_cache /tmp/librosa_cache /tmp/huggingface /tmp/torch /tmp/cache /tmp/matplotlib
 
 # Expose MCP server port (if needed for stdio, this is optional)
 # The MCP server typically uses stdio for communication

@@ -672,7 +672,8 @@ def mix_layers(
 
         # Fix ownership of output file and directory
         fix_ownership(output_path)
-        fix_ownership(output_dir)
+        if output_dir != ".":
+            fix_ownership(output_dir)
 
         return {
             "success": True,

@@ -154,7 +154,7 @@ Separates audio into individual stems using the Demucs model.
 **Parameters:**
 - `audio_path` (str): Path to input audio file
 - `output_dir` (str, optional): Output directory (default: ./output)
-- `model` (str, optional): Demucs model to use (default: htdemucs)
+- `model` (str, optional): Demucs model to use (default: mdx)
 
 **Returns:**
 ```json

@@ -18,7 +18,7 @@ def get_device():
     return _device
 
 
-def get_demucs_model(model_name: str = 'htdemucs'):
+def get_demucs_model(model_name: str = 'mdx'):
     """Load and cache the Demucs model by name."""
     global _demucs_models
     if model_name not in _demucs_models:

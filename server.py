@@ -1280,9 +1280,11 @@ def export_notation(
                 first_part = score.parts[0]
 
                 # Add elements in the correct order: clef, key signature, time signature, tempo
-                # Insert in reverse order since insert(0, ...) puts each at the beginning
+                # Since we use insert(0, ...) which puts each element at the start,
+                # we add them in reverse order: tempo, time sig, key sig, clef
+                # This results in the final order: clef, key sig, time sig, tempo
                 
-                # Add tempo marking (inserted last, so it appears last)
+                # Add tempo marking (inserted first in code, appears last in score)
                 if tempo:
                     tempo_mark = m21_tempo.MetronomeMark(number=tempo)
                     first_part.insert(0, tempo_mark)

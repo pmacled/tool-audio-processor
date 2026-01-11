@@ -31,3 +31,12 @@ crepe>=0.0.13
 
 # Utilities
 python-dotenv>=1.0.0
+
+# Vocal separation models
+audio-separator>=0.18.0
+onnxruntime-gpu>=1.16.0
+gdown>=4.7.0
+
+# TensorFlow/Keras for SATB models
+tensorflow>=2.15.0
+keras>=3.0.0

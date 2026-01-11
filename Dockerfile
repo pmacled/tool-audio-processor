@@ -69,9 +69,21 @@ RUN python -c "from demucs.pretrained import get_model; \
 # Copy application code
 COPY . .
 
-# Create cache directories with proper permissions
-RUN mkdir -p /tmp/numba_cache /tmp/librosa_cache /tmp/huggingface /tmp/torch /tmp/cache /tmp/matplotlib \
-    && chmod -R 755 /tmp/numba_cache /tmp/librosa_cache /tmp/huggingface /tmp/torch /tmp/cache /tmp/matplotlib
+# Pre-download RoFormer models
+RUN python -c "from utils.model_downloads import download_roformer_models; \
+    print('Downloading RoFormer models...'); \
+    download_roformer_models(); \
+    print('RoFormer models downloaded successfully')"
+
+# Pre-download SATB models from Google Drive
+RUN python -c "from utils.model_downloads import download_satb_models; \
+    print('Downloading SATB models from Google Drive...'); \
+    download_satb_models(); \
+    print('SATB models downloaded successfully')" || echo "Note: SATB model download skipped (requires file IDs)"
+
+# Create cache directories and model directories with proper permissions
+RUN mkdir -p /tmp/numba_cache /tmp/librosa_cache /tmp/huggingface /tmp/torch /tmp/cache /tmp/matplotlib /app/models/roformer /app/models/satb \
+    && chmod -R 755 /tmp/numba_cache /tmp/librosa_cache /tmp/huggingface /tmp/torch /tmp/cache /tmp/matplotlib /app/models
 
 # Expose MCP server port (if needed for stdio, this is optional)
 # The MCP server typically uses stdio for communication

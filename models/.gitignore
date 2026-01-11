@@ -1,0 +1,8 @@
+# Ignore model weights but keep directory structure
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+
+# Keep README
+!README.md

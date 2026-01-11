@@ -5,8 +5,8 @@ Device and model management utilities.
 import torch
 from demucs.pretrained import get_model
 
-# Global model cache
-_demucs_model = None
+# Global caches
+_demucs_models = {}
 _device = None
 
 
@@ -19,11 +19,12 @@ def get_device():
 
 
 def get_demucs_model(model_name: str = 'htdemucs'):
-    """Load and cache the Demucs model."""
-    global _demucs_model
-    if _demucs_model is None:
+    """Load and cache the Demucs model by name."""
+    global _demucs_models
+    if model_name not in _demucs_models:
         device = get_device()
-        _demucs_model = get_model(name=model_name)
-        _demucs_model.to(device)
-        _demucs_model.eval()
-    return _demucs_model
+        model = get_model(name=model_name)
+        model.to(device)
+        model.eval()
+        _demucs_models[model_name] = model
+    return _demucs_models[model_name]

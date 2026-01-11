@@ -6,7 +6,7 @@ import os
 from typing import Dict, Any, Optional, List
 
 import numpy as np
-from mido import MidiFile, MidiTrack, Message, MetaMessage
+from mido import MidiFile, Message, MetaMessage
 from fastmcp import FastMCP
 
 from utils import fix_ownership
@@ -32,13 +32,15 @@ def register_tools(mcp: FastMCP):
         Args:
             midi_path: Path to the MIDI file to refine
             output_path: Path to save refined MIDI (default: ./output/refined.mid)
-            operations: List of operations to apply (default: ["quantize", "remove_short_notes", "smooth_velocities"]).
-                Available operations: "quantize", "remove_short_notes", "smooth_velocities"
+            operations: List of note-processing operations to apply (default: ["quantize", "remove_short_notes", "smooth_velocities"]).
+                Available operations (controlled by this list): "quantize", "remove_short_notes", "smooth_velocities".
             quantize_grid: Note duration for quantization - "32nd", "16th", "8th", "quarter" (default: 16th)
             min_note_duration: Minimum note length in seconds (default: 0.1)
             velocity_smoothing: Window size for velocity smoothing (default: 5)
-            transpose: Semitones to transpose (+/-). Applied automatically when non-zero (default: 0)
-            tempo_scale: Time stretch factor. Applied automatically when not 1.0 (default: 1.0)
+            transpose: Semitones to transpose (+/-). Applied automatically when non-zero (default: 0). This is not controlled by the
+                operations list; it is always applied when this parameter is non-zero.
+            tempo_scale: Time stretch factor. Applied automatically when not 1.0 (default: 1.0). This is not controlled by the
+                operations list; it is always applied when this parameter is not 1.0.
 
         Returns:
             Dictionary with refined MIDI path, operations applied, and note counts

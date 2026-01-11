@@ -99,7 +99,7 @@ def register_tools(mcp: FastMCP):
                 reverb_response[-1] = decay
 
                 modified = np.convolve(modified, reverb_response, mode='same')
-                # Normalize reverb output to avoid harsh clipping from convolution overs
+                # Normalize reverb output to avoid harsh clipping from convolution overflows
                 peak = np.max(np.abs(modified))
                 if peak > 1.0:
                     modified = modified / peak

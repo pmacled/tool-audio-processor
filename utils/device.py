@@ -31,10 +31,21 @@ def get_demucs_model(model_name: str = 'mdx'):
         Loaded Demucs model
 
     Raises:
-        ValueError: If model_name is not recognized
+        ValueError: If model_name is invalid (empty, None, or not a string)
         RuntimeError: If model fails to load
     """
     global _demucs_models
+
+    # Validate model_name parameter - type check first
+    if not isinstance(model_name, str):
+        raise ValueError(
+            f"Invalid model_name: must be a string, got {type(model_name).__name__}: {repr(model_name)}"
+        )
+    
+    # Strip whitespace to avoid silent failures
+    model_name = model_name.strip()
+    if not model_name:
+        raise ValueError("Invalid model_name: cannot be empty or whitespace-only")
 
     # List of models pre-downloaded during Docker build
     PREINSTALLED_MODELS = ['mdx', 'htdemucs', 'mdx_extra']

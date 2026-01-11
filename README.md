@@ -4,23 +4,27 @@ A Docker-based Model Context Protocol (MCP) server for advanced audio layer mani
 
 ## Features
 
-This MCP server provides six powerful tools for audio processing:
+This MCP server provides nine powerful tools for audio processing:
 
 1. **separate_audio_layers** - Split audio into vocals, drums, bass, and other layers using Demucs
 2. **analyze_layer** - Extract musical features including notes, tempo, rhythm, and key using librosa
-3. **synthesize_instrument_layer** - Generate new instrument audio from MIDI files
-4. **replace_layer** - Swap out specific audio layers in a mix
-5. **modify_layer** - Apply effects like pitch shift, time stretch, reverb, and normalization
-6. **mix_layers** - Combine multiple audio layers with volume control
+3. **extract_melody_to_midi** - Convert audio to MIDI notation using pitch detection
+4. **refine_midi** - Clean up and refine MIDI files with quantization, smoothing, and transposition
+5. **export_notation** - Convert MIDI to human-readable music notation (MusicXML, LilyPond, PDF, PNG)
+6. **synthesize_instrument_layer** - Generate new instrument audio from MIDI files
+7. **replace_layer** - Swap out specific audio layers in a mix
+8. **modify_layer** - Apply effects like pitch shift, time stretch, reverb, and normalization
+9. **mix_layers** - Combine multiple audio layers with volume control
 
 ## Technology Stack
 
 - **Base Image**: NVIDIA CUDA 12.1.0 with cuDNN 8 on Ubuntu 22.04
-- **Python**: 3.12+
+- **Python**: 3.11+
 - **Deep Learning**: PyTorch, Torchaudio
 - **Audio Processing**: Demucs (vocal separation), Librosa (analysis)
 - **MCP Framework**: FastMCP
-- **MIDI**: Pretty MIDI, Mido
+- **MIDI Processing**: Pretty MIDI, Mido, Basic Pitch, CREPE, pyFluidSynth
+- **Music Notation**: Music21, LilyPond (for PDF/PNG export)
 
 ## Container Architecture
 
@@ -187,7 +191,90 @@ Analyzes an audio file to extract musical features.
 }
 ```
 
-### 3. synthesize_instrument_layer
+### 3. extract_melody_to_midi
+
+Extracts melody from audio and converts it to MIDI notation.
+
+**Parameters:**
+- `audio_path` (str): Path to audio file to convert
+- `output_midi_path` (str, optional): Output MIDI path (default: ./output/melody.mid)
+- `method` (str, optional): Pitch detection method - "basic-pitch", "crepe", "pyin" (default: basic-pitch)
+- `voicing_threshold` (float, optional): Confidence threshold for pitch detection 0-1 (default: 0.5)
+- `tempo` (float, optional): BPM for quantization, auto-detected if None (default: None)
+- `min_note_duration` (float, optional): Minimum note length in seconds (default: 0.1)
+
+**Returns:**
+```json
+{
+  "success": true,
+  "midi_path": "./output/melody.mid",
+  "note_count": 450,
+  "duration": 120.5,
+  "pitch_range": {"min": 60, "max": 84},
+  "method_used": "basic-pitch",
+  "tempo_bpm": 120.0
+}
+```
+
+### 4. refine_midi
+
+Cleans up and refines extracted MIDI files for better playback and notation.
+
+**Parameters:**
+- `midi_path` (str): Path to MIDI file to refine
+- `output_path` (str, optional): Output path (default: ./output/refined.mid)
+- `operations` (List[str], optional): Operations to apply (default: ["quantize", "remove_short_notes", "smooth_velocities"])
+- `quantize_grid` (str, optional): Quantization grid - "32nd", "16th", "8th", "quarter" (default: 16th)
+- `min_note_duration` (float, optional): Minimum note length in seconds (default: 0.1)
+- `velocity_smoothing` (int, optional): Window size for velocity smoothing (default: 5)
+- `transpose` (int, optional): Semitones to transpose +/- (default: 0)
+- `tempo_scale` (float, optional): Time stretch factor (default: 1.0)
+
+**Returns:**
+```json
+{
+  "success": true,
+  "output_path": "./output/refined.mid",
+  "operations_applied": ["quantize", "remove_short_notes", "smooth_velocities"],
+  "note_count_before": 450,
+  "note_count_after": 380,
+  "quantize_grid": "16th",
+  "transpose_semitones": 2,
+  "tempo_scale": 1.0
+}
+```
+
+### 5. export_notation
+
+Converts MIDI files to human-readable music notation formats.
+
+**Parameters:**
+- `midi_path` (str): Path to MIDI file to convert
+- `output_path` (str, optional): Output file path (default: ./output/notation.musicxml)
+- `output_format` (str, optional): Output format - "musicxml", "lilypond", "pdf", "png" (default: musicxml)
+- `title` (str, optional): Title of the piece (default: None)
+- `composer` (str, optional): Composer name (default: None)
+- `key_signature` (str, optional): Key signature, e.g., "C", "D#", "Bb" (default: None)
+- `time_signature` (str, optional): Time signature (default: 4/4)
+- `tempo` (float, optional): Tempo in BPM for display (default: None)
+- `clef` (str, optional): Clef type - "treble", "bass", "alto" (default: treble)
+
+**Returns:**
+```json
+{
+  "success": true,
+  "output_path": "./output/notation.pdf",
+  "format": "pdf",
+  "measure_count": 32,
+  "title": "My Melody",
+  "composer": "John Doe",
+  "key_signature": "C",
+  "time_signature": "4/4",
+  "tempo": 120.0
+}
+```
+
+### 6. synthesize_instrument_layer
 
 Generates audio from MIDI files.
 
@@ -207,7 +294,7 @@ Generates audio from MIDI files.
 }
 ```
 
-### 4. replace_layer
+### 7. replace_layer
 
 Replaces a specific layer in a mixed audio file.
 
@@ -227,7 +314,7 @@ Replaces a specific layer in a mixed audio file.
 }
 ```
 
-### 5. modify_layer
+### 8. modify_layer
 
 Applies audio effects to a layer.
 
@@ -252,7 +339,7 @@ Applies audio effects to a layer.
 }
 ```
 
-### 6. mix_layers
+### 9. mix_layers
 
 Combines multiple audio layers into a single mix.
 
@@ -326,6 +413,38 @@ final_mix = mix_layers(
 )
 ```
 
+### Example 4: Audio to Sheet Music
+
+```python
+# Extract melody from vocals to MIDI
+midi_result = extract_melody_to_midi(
+    audio_path="./output/vocals.wav",
+    output_midi_path="./output/melody.mid",
+    method="basic-pitch"
+)
+
+# Refine the MIDI for better notation
+refined = refine_midi(
+    midi_path="./output/melody.mid",
+    output_path="./output/melody_refined.mid",
+    operations=["quantize", "remove_short_notes", "smooth_velocities"],
+    quantize_grid="16th",
+    transpose=2
+)
+
+# Export to PDF sheet music
+notation = export_notation(
+    midi_path="./output/melody_refined.mid",
+    output_path="./output/sheet_music.pdf",
+    output_format="pdf",
+    title="Extracted Melody",
+    composer="AI Transcription",
+    key_signature="C",
+    time_signature="4/4",
+    tempo=120.0
+)
+```
+
 ## Directory Structure
 
 ```
@@ -336,6 +455,16 @@ final_mix = mix_layers(
 ├── server.py            # MCP server implementation
 ├── test_server.py       # Validation test script
 ├── mcp-config.json      # Example MCP client configuration
+├── tools/               # Tool implementations
+│   ├── __init__.py      # Tool registration
+│   ├── separation.py    # Audio separation
+│   ├── analysis.py      # Audio analysis
+│   ├── midi_extraction.py  # Audio to MIDI conversion
+│   ├── midi_refinement.py  # MIDI cleanup
+│   ├── notation.py      # Music notation export
+│   ├── synthesis.py     # MIDI to audio synthesis
+│   ├── mixing.py        # Layer mixing and replacement
+│   └── effects.py       # Audio effects
 ├── .dockerignore        # Docker build exclusions
 ├── .gitignore           # Git exclusions
 └── README.md            # This file
@@ -351,7 +480,7 @@ python3 test_server.py
 
 This will verify:
 - Server syntax and structure
-- All 6 tools are properly defined
+- All 9 tools are properly defined
 - MCP decorators are present
 - Dockerfile configuration
 - Python dependencies

@@ -13,15 +13,15 @@ ENV DEBIAN_FRONTEND=noninteractive \
     XDG_CACHE_HOME=/tmp/cache \
     MPLCONFIGDIR=/tmp/matplotlib
 
-# Install Python 3.12 and system dependencies
+# Install Python 3.11 and system dependencies
 RUN apt-get update && apt-get install -y \
     software-properties-common \
     curl \
     && add-apt-repository ppa:deadsnakes/ppa \
     && apt-get update && apt-get install -y \
-    python3.12 \
-    python3.12-venv \
-    python3.12-dev \
+    python3.11 \
+    python3.11-venv \
+    python3.11-dev \
     ffmpeg \
     libsndfile1 \
     fluidsynth \
@@ -29,17 +29,17 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Set Python 3.12 as default
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1 \
-    && update-alternatives --install /usr/bin/python python /usr/bin/python3.12 1
+# Set Python 3.11 as default
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
+    && update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
 
-# Install pip for Python 3.12 using get-pip.py
+# Install pip for Python 3.11 using get-pip.py
 RUN curl -fsS https://bootstrap.pypa.io/get-pip.py -o get-pip.py \
-    && python3.12 get-pip.py \
+    && python3.11 get-pip.py \
     && rm get-pip.py
 
 # Upgrade pip, setuptools, and wheel
-RUN python3.12 -m pip install --upgrade pip setuptools wheel
+RUN python3.11 -m pip install --upgrade pip setuptools wheel
 
 # Set working directory to /app for container's internal files
 WORKDIR /app

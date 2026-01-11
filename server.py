@@ -41,7 +41,7 @@ def get_workspace_owner():
     except (TypeError, ValueError) as e:
         print(
             f"Warning: Invalid HOST_UID/HOST_GID environment values; "
-            f"falling back to defaults: {e}",
+            f"skipping ownership changes: {e}",
             flush=True,
         )
         return None, None
@@ -52,11 +52,6 @@ def fix_ownership(path):
     uid, gid = get_workspace_owner()
     if uid is not None and gid is not None:
         try:
-            # Check if path exists and get its type (handles race conditions via try/except)
-            if not os.path.exists(path):
-                print(f"Warning: Path does not exist, skipping ownership change: {path}", flush=True)
-                return
-            
             # If path is a directory, chown recursively
             if os.path.isdir(path):
                 for root, dirs, files in os.walk(path):

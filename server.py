@@ -29,6 +29,39 @@ _demucs_model = None
 _device = None
 
 
+def get_workspace_owner():
+    """Get the UID/GID from environment variables (HOST_UID and HOST_GID)."""
+    try:
+        uid = int(os.environ.get('HOST_UID', 0))
+        gid = int(os.environ.get('HOST_GID', 0))
+        # Only return valid non-root UID/GID
+        if uid > 0 and gid > 0:
+            return uid, gid
+        return None, None
+    except Exception:
+        return None, None
+
+
+def fix_ownership(path):
+    """Change ownership of path to match /workspace owner."""
+    uid, gid = get_workspace_owner()
+    if uid is not None and gid is not None:
+        try:
+            # If path is a directory, chown recursively
+            if os.path.isdir(path):
+                for root, dirs, files in os.walk(path):
+                    os.chown(root, uid, gid)
+                    for d in dirs:
+                        os.chown(os.path.join(root, d), uid, gid)
+                    for f in files:
+                        os.chown(os.path.join(root, f), uid, gid)
+            else:
+                os.chown(path, uid, gid)
+        except Exception as e:
+            # Log but don't fail - this is a best-effort operation
+            print(f"Warning: Could not change ownership of {path}: {e}", flush=True)
+
+
 def get_device():
     """Get the appropriate device (CUDA if available, otherwise CPU)."""
     global _device
@@ -109,7 +142,10 @@ def separate_audio_layers(
             output_path = os.path.join(output_dir, f"{Path(audio_path).stem}_{name}.wav")
             save_audio(sources[i], output_path, sr, clip='clamp', as_float=False)
             output_paths[name] = output_path
-        
+
+        # Fix ownership of output directory and all created files
+        fix_ownership(output_dir)
+
         return {
             "success": True,
             "layers": output_paths,
@@ -284,10 +320,15 @@ def synthesize_instrument_layer(
         dir_name = os.path.dirname(output_path)
         if dir_name:
             os.makedirs(dir_name, exist_ok=True)
-        
+
         # Save audio
         sf.write(output_path, audio, sample_rate)
-        
+
+        # Fix ownership of output file and directory
+        fix_ownership(output_path)
+        if dir_name:
+            fix_ownership(dir_name)
+
         # Get MIDI info
         total_notes = sum(len(inst.notes) for inst in midi_data.instruments)
         
@@ -400,10 +441,15 @@ def replace_layer(
             output_dir = os.path.dirname(output_path)
             if output_dir:
                 os.makedirs(output_dir, exist_ok=True)
-            
+
             # Save output
             sf.write(output_path, mixed, sr)
-            
+
+            # Fix ownership of output file and directory
+            fix_ownership(output_path)
+            if output_dir:
+                fix_ownership(output_dir)
+
             return {
                 "success": True,
                 "output_path": output_path,
@@ -522,15 +568,20 @@ def modify_layer(
         
         # Clip to prevent distortion
         modified = np.clip(modified, -1.0, 1.0)
-        
+
         # Ensure output directory exists (if a directory is specified)
         output_dir = os.path.dirname(output_path)
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
-        
+
         # Save output
         sf.write(output_path, modified, sr)
-        
+
+        # Fix ownership of output file and directory
+        fix_ownership(output_path)
+        if output_dir:
+            fix_ownership(output_dir)
+
         return {
             "success": True,
             "output_path": output_path,
@@ -611,14 +662,18 @@ def mix_layers(
             max_val = np.max(np.abs(mixed))
             if max_val > 0:
                 mixed = mixed / max_val
-        
+
         # Ensure output directory exists (handle case where output_path has no directory component)
         output_dir = os.path.dirname(output_path) or "."
         os.makedirs(output_dir, exist_ok=True)
-        
+
         # Save output
         sf.write(output_path, mixed, sr)
-        
+
+        # Fix ownership of output file and directory
+        fix_ownership(output_path)
+        fix_ownership(output_dir)
+
         return {
             "success": True,
             "output_path": output_path,

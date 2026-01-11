@@ -47,7 +47,9 @@ docker build -t audio-processor-mcp .
 ### Using Docker Compose (Recommended)
 
 ```bash
-# Run with docker-compose (no need to create directories first)
+# Set your user ID and group ID, then run docker-compose
+export UID=$(id -u)
+export GID=$(id -g)
 docker-compose up
 ```
 
@@ -56,16 +58,16 @@ docker-compose up
 #### With GPU Support
 
 ```bash
-docker run --gpus all -i --user $(id -u):$(id -g) -v $(pwd):/workspace -w /workspace audio-processor-mcp
+docker run --gpus all -i -e HOST_UID=$(id -u) -e HOST_GID=$(id -g) -v $(pwd):/workspace -w /workspace audio-processor-mcp
 ```
 
 #### CPU Only
 
 ```bash
-docker run -i --user $(id -u):$(id -g) -v $(pwd):/workspace -w /workspace audio-processor-mcp
+docker run -i -e HOST_UID=$(id -u) -e HOST_GID=$(id -g) -v $(pwd):/workspace -w /workspace audio-processor-mcp
 ```
 
-**Note:** The `--user $(id -u):$(id -g)` flag ensures the container runs as your user, preventing permission issues with mounted volumes. The entire working directory is mounted, allowing the container to create input/output directories as needed.
+**Note:** The container runs as root internally but automatically adjusts file ownership to match your user (via HOST_UID and HOST_GID environment variables), ensuring output files are owned by your user account. The entire working directory is mounted, allowing the container to create input/output directories as needed.
 
 ### MCP Client Configuration
 
@@ -82,8 +84,10 @@ Add this to your MCP client configuration (e.g., Claude Code). Choose either the
         "run",
         "--rm",
         "-i",
-        "--user",
-        "1000:1000",
+        "-e",
+        "HOST_UID=1000",
+        "-e",
+        "HOST_GID=1000",
         "--gpus",
         "all",
         "-v",
@@ -100,6 +104,8 @@ Add this to your MCP client configuration (e.g., Claude Code). Choose either the
 
 **Requirements**: NVIDIA GPU with nvidia-docker2 installed
 
+**Note**: Update HOST_UID and HOST_GID to match your user (run `id -u` and `id -g` to find your values).
+
 #### Option 2: CPU Only
 
 ```json
@@ -111,8 +117,10 @@ Add this to your MCP client configuration (e.g., Claude Code). Choose either the
         "run",
         "--rm",
         "-i",
-        "--user",
-        "1000:1000",
+        "-e",
+        "HOST_UID=1000",
+        "-e",
+        "HOST_GID=1000",
         "-v",
         "${PWD}:/workspace",
         "-w",
@@ -127,7 +135,8 @@ Add this to your MCP client configuration (e.g., Claude Code). Choose either the
 
 **Notes**:
 - Processing will be slower without GPU acceleration, but works on any system with Docker.
-- The `--user 1000:1000` flag prevents permission issues with mounted volumes. If you have a different UID/GID, run `id -u` and `id -g` to find your values and update accordingly.
+- The container runs as root internally but automatically adjusts file ownership to match your user (via HOST_UID and HOST_GID).
+- Update HOST_UID and HOST_GID to match your user (run `id -u` and `id -g` to find your values).
 - The entire working directory is mounted at `/workspace`, allowing you to work with audio files in your project structure without pre-creating directories.
 
 See `mcp-config.json` for both configurations.
@@ -366,26 +375,31 @@ To check if GPU is being used, look for `"device": "cuda:0"` in the tool respons
 
 ### Permission Denied Errors
 
-If you get permission errors when writing to directories:
+The container runs as root internally but automatically changes ownership of output files to match your user. This ensures:
+- Cache directories are writable (Numba, Librosa, HuggingFace models)
+- Output files are owned by your user account
 
-**Using docker-compose:**
-The compose file uses `${UID:-1000}:${GID:-1000}` to run as your user. Ensure these environment variables are set:
+**For docker-compose:**
 ```bash
 export UID=$(id -u)
 export GID=$(id -g)
 docker-compose up
 ```
 
-**Using docker run:**
-Make sure to include the `--user` flag:
+**For docker run:**
 ```bash
-docker run --user $(id -u):$(id -g) -v $(pwd):/workspace -w /workspace ...
+docker run -e HOST_UID=$(id -u) -e HOST_GID=$(id -g) -i -v $(pwd):/workspace -w /workspace ...
 ```
 
-**Using MCP client:**
-Update the `--user` value in your MCP config to match your UID:GID (run `id -u` and `id -g` to find these values).
+**For MCP client:**
+Update the HOST_UID and HOST_GID values in your MCP config to match your user (run `id -u` and `id -g` to find these values).
 
-**Note:** The entire working directory is now mounted, eliminating the need to pre-create input/output directories. The container will create them with the correct permissions as needed.
+If you still encounter permission issues:
+1. Ensure the mounted workspace directory is readable: `ls -la /path/to/workspace`
+2. Check Docker has permission to mount the directory
+3. On SELinux systems, you may need to add `:z` or `:Z` to volume mounts: `-v $(pwd):/workspace:z`
+
+**Note:** The entire working directory is mounted at `/workspace`, eliminating the need to pre-create input/output directories. The container will create them with the correct ownership automatically.
 
 ### GPU Not Detected
 

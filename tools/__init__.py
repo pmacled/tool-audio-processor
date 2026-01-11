@@ -10,6 +10,8 @@ from .effects import register_tools as register_effects_tools
 from .midi_extraction import register_tools as register_midi_extraction_tools
 from .midi_refinement import register_tools as register_midi_refinement_tools
 from .notation import register_tools as register_notation_tools
+from .vocal_separation import register_tools as register_vocal_separation_tools
+from .satb_separation import register_tools as register_satb_separation_tools
 
 
 def register_all_tools(mcp):
@@ -22,6 +24,8 @@ def register_all_tools(mcp):
     register_midi_extraction_tools(mcp)
     register_midi_refinement_tools(mcp)
     register_notation_tools(mcp)
+    register_vocal_separation_tools(mcp)
+    register_satb_separation_tools(mcp)
 
 
 __all__ = [
@@ -34,4 +38,6 @@ __all__ = [
     'register_midi_extraction_tools',
     'register_midi_refinement_tools',
     'register_notation_tools',
+    'register_vocal_separation_tools',
+    'register_satb_separation_tools',
 ]

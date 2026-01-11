@@ -42,12 +42,24 @@ def test_tool_definitions():
     ]
     
     try:
-        with open("server.py", "r") as f:
-            content = f.read()
-        
+        # Check in tools directory
+        import os
+        tools_dir = "tools"
         all_found = True
+        
+        if not os.path.isdir(tools_dir):
+            print(f"✗ Tools directory not found")
+            return False
+        
+        # Read all Python files in tools directory
+        tool_files = [f for f in os.listdir(tools_dir) if f.endswith('.py') and f != '__init__.py']
+        all_content = ""
+        for tool_file in tool_files:
+            with open(os.path.join(tools_dir, tool_file), "r") as f:
+                all_content += f.read()
+        
         for tool in required_tools:
-            if f"def {tool}(" in content:
+            if f"def {tool}(" in all_content:
                 print(f"✓ {tool} - defined")
             else:
                 print(f"✗ {tool} - NOT FOUND")
@@ -55,7 +67,7 @@ def test_tool_definitions():
         
         return all_found
     except Exception as e:
-        print(f"✗ Error reading server.py: {e}")
+        print(f"✗ Error reading tools: {e}")
         return False
 
 def test_mcp_decorator():
@@ -63,9 +75,13 @@ def test_mcp_decorator():
     print("\nChecking MCP tool decorators...")
     
     try:
-        with open("server.py", "r") as f:
-            lines = f.readlines()
-
+        import os
+        tools_dir = "tools"
+        
+        if not os.path.isdir(tools_dir):
+            print(f"✗ Tools directory not found")
+            return False
+        
         required_tools = [
             "separate_audio_layers",
             "analyze_layer",
@@ -76,20 +92,26 @@ def test_mcp_decorator():
         ]
 
         decorated_tools = set()
+        
+        # Read all Python files in tools directory
+        tool_files = [f for f in os.listdir(tools_dir) if f.endswith('.py') and f != '__init__.py']
+        for tool_file in tool_files:
+            with open(os.path.join(tools_dir, tool_file), "r") as f:
+                lines = f.readlines()
 
-        for i, line in enumerate(lines):
-            # Look for the @mcp.tool() decorator
-            if line.lstrip().startswith("@mcp.tool()"):
-                # Find the next non-empty line after the decorator
-                j = i + 1
-                while j < len(lines) and lines[j].strip() == "":
-                    j += 1
-                if j < len(lines):
-                    next_line = lines[j].lstrip()
-                    if next_line.startswith("def "):
-                        for tool in required_tools:
-                            if next_line.startswith(f"def {tool}("):
-                                decorated_tools.add(tool)
+            for i, line in enumerate(lines):
+                # Look for the @mcp.tool() decorator
+                if line.lstrip().startswith("@mcp.tool()"):
+                    # Find the next non-empty line after the decorator
+                    j = i + 1
+                    while j < len(lines) and lines[j].strip() == "":
+                        j += 1
+                    if j < len(lines):
+                        next_line = lines[j].lstrip()
+                        if next_line.startswith("def "):
+                            for tool in required_tools:
+                                if next_line.startswith(f"def {tool}("):
+                                    decorated_tools.add(tool)
 
         print(
             f"Found {len(decorated_tools)} decorated tools: "

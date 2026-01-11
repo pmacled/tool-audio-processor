@@ -15,7 +15,7 @@ from fastmcp import FastMCP
 from utils import get_device, get_demucs_model, fix_ownership
 
 
-def _separate_audio_internal(audio_path: str, output_dir: str, model: str = "htdemucs") -> Dict[str, Any]:
+def separate_audio_internal(audio_path: str, output_dir: str, model: str = "htdemucs") -> Dict[str, Any]:
     """Internal function to separate audio, used by other tools."""
     try:
         # Validate input file exists
@@ -101,4 +101,4 @@ def register_tools(mcp: FastMCP):
         Returns:
             Dictionary with paths to separated layer files and metadata
         """
-        return _separate_audio_internal(audio_path, output_dir, model)
+        return separate_audio_internal(audio_path, output_dir, model)

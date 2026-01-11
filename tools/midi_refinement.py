@@ -250,7 +250,8 @@ def register_tools(mcp: FastMCP):
                 "note_count_before": original_note_count,
                 "note_count_after": refined_note_count,
                 "quantize_grid": quantize_grid if "quantize" in operations else None,
-                "transpose_semitones": transpose if "transpose" in operations else None,
+                "transpose_semitones": transpose if transpose != 0 else None,
+                "tempo_scale": tempo_scale if tempo_scale != 1.0 else None,
                 "message": f"Successfully refined MIDI with {len(operations)} operations"
             }
 

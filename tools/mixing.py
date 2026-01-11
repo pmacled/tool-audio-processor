@@ -38,14 +38,14 @@ def register_tools(mcp: FastMCP):
             Dictionary with path to output mix and metadata
         """
         try:
-            # Import separation function directly
-            from tools.separation import _separate_audio_internal
+            # Import separation function (public API)
+            from tools.separation import separate_audio_internal
             
             # First, separate the original mix
             temp_dir = tempfile.mkdtemp()
             
             try:
-                separation_result = _separate_audio_internal(original_mix_path, temp_dir)
+                separation_result = separate_audio_internal(original_mix_path, temp_dir)
                 
                 if not separation_result["success"]:
                     return separation_result

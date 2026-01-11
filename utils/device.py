@@ -184,7 +184,11 @@ def get_satb_model(model_type: str = 'local'):
                     for gpu in gpus:
                         tf.config.experimental.set_memory_growth(gpu, True)
                 except RuntimeError as e:
-                    print(f"GPU configuration warning: {e}", flush=True)
+                    print(
+                        f"GPU configuration warning: failed to enable memory growth ({e}). "
+                        "Continuing without memory growth; GPU may still be used.",
+                        flush=True,
+                    )
 
             # Model filename mapping
             model_files = {

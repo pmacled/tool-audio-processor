@@ -79,7 +79,7 @@ RUN python -c "from utils.model_downloads import download_roformer_models; \
 RUN python -c "from utils.model_downloads import download_satb_models; \
     print('Downloading SATB models from Google Drive...'); \
     download_satb_models(); \
-    print('SATB models downloaded successfully')" || echo "Note: SATB model download skipped (requires file IDs)"
+    print('SATB models downloaded successfully')"
 
 # Create cache directories and model directories with proper permissions
 RUN mkdir -p /tmp/numba_cache /tmp/librosa_cache /tmp/huggingface /tmp/torch /tmp/cache /tmp/matplotlib /app/models/roformer /app/models/satb \

@@ -122,7 +122,7 @@ def get_roformer_model(model_name: str = 'melband'):
             from audio_separator.separator import Separator
 
             # Use absolute path to container's models directory
-            # This ensures we use pre-downloaded models even when working dir is /workspace
+            # This ensures we use pre-downloaded models even when working directory is /workspace
             model_dir = Path("/app/models/roformer")
 
             separator = Separator(

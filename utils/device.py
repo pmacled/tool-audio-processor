@@ -196,7 +196,7 @@ def get_satb_model(model_type: str = 'local'):
             }
 
             # Use absolute path to container's models directory
-            # This ensures we use pre-downloaded models even when working dir is /workspace
+            # This ensures we use pre-downloaded models even when the working directory is /workspace
             model_path = Path("/app/models/satb") / model_files[model_type]
 
             if not model_path.exists():

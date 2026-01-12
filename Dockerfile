@@ -22,6 +22,9 @@ RUN apt-get update && apt-get install -y \
     python3.11 \
     python3.11-venv \
     python3.11-dev \
+    build-essential \
+    gcc \
+    g++ \
     ffmpeg \
     libsndfile1 \
     fluidsynth \
@@ -53,6 +56,10 @@ RUN pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu
 
 # Install other Python dependencies
 RUN pip install -r requirements.txt
+
+# Install audio-separator separately without dependencies to avoid beartype conflict
+# audio-separator declares beartype<0.19.0 but works fine with beartype>=0.20.0 (required by fastmcp)
+RUN pip install --no-deps audio-separator==0.22.0
 
 # Pre-download Demucs models during build to avoid runtime download delays
 RUN python -c "from demucs.pretrained import get_model; \

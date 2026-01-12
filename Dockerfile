@@ -95,5 +95,9 @@ RUN mkdir -p /tmp/numba_cache /tmp/librosa_cache /tmp/huggingface /tmp/torch /tm
 # Expose MCP server port (if needed for stdio, this is optional)
 # The MCP server typically uses stdio for communication
 
-# Set the entrypoint to run the MCP server from /app
+# Switch to /workspace for runtime (matches docker-compose.yml)
+# Application code remains at /app, user files are mounted at /workspace
+WORKDIR /workspace
+
+# Set the entrypoint to run the MCP server
 ENTRYPOINT ["python", "/app/server.py"]

@@ -41,7 +41,9 @@ def test_tool_definitions():
         "mix_layers",
         "extract_melody_to_midi",
         "refine_midi",
-        "export_notation"
+        "export_notation",
+        "separate_satb_voices",
+        "separate_lead_backing_vocals"
     ]
     
     try:
@@ -94,7 +96,9 @@ def test_mcp_decorator():
             "mix_layers",
             "extract_melody_to_midi",
             "refine_midi",
-            "export_notation"
+            "export_notation",
+            "separate_satb_voices",
+            "separate_lead_backing_vocals"
         ]
 
         decorated_tools = set()

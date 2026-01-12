@@ -121,13 +121,13 @@ def get_roformer_model(model_name: str = 'melband'):
         try:
             from audio_separator.separator import Separator
 
-            device_name = 'cuda' if torch.cuda.is_available() else 'cpu'
-            model_dir = Path(__file__).parent.parent / "models" / "roformer"
+            # Use absolute path to container's models directory
+            # This ensures we use pre-downloaded models even when working dir is /workspace
+            model_dir = Path("/app/models/roformer")
 
             separator = Separator(
                 model_file_dir=str(model_dir),
-                output_format='wav',
-                device=device_name
+                output_format='wav'
             )
             separator.load_model(model_filename=model_filename)
             _roformer_models[model_name] = separator
@@ -195,12 +195,15 @@ def get_satb_model(model_type: str = 'local'):
                 'global': 'c-unet_ds_g.h5'
             }
 
-            model_path = Path(__file__).parent.parent / "models" / "satb" / model_files[model_type]
+            # Use absolute path to container's models directory
+            # This ensures we use pre-downloaded models even when working dir is /workspace
+            model_path = Path("/app/models/satb") / model_files[model_type]
 
             if not model_path.exists():
                 raise FileNotFoundError(
                     f"SATB model not found at {model_path}. "
-                    f"Please download from: https://drive.google.com/drive/folders/1zqdSLCGJ7cqw7oCP6iEhh3t2uIY9sC31"
+                    f"The model should be pre-downloaded in the container image. "
+                    f"If running locally, download from: https://drive.google.com/drive/folders/1zqdSLCGJ7cqw7oCP6iEhh3t2uIY9sC31"
                 )
 
             # Load Keras model

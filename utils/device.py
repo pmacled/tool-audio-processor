@@ -125,12 +125,11 @@ def get_roformer_model(model_name: str = 'melband'):
             model_dir = Path(__file__).parent.parent / "models" / "roformer"
 
             separator = Separator(
-                model_filename=model_filename,
                 model_file_dir=str(model_dir),
                 output_format='wav',
                 device=device_name
             )
-            separator.load_model()
+            separator.load_model(model_filename=model_filename)
             _roformer_models[model_name] = separator
 
         except Exception as e:

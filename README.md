@@ -4,7 +4,7 @@ A Docker-based Model Context Protocol (MCP) server for advanced audio layer mani
 
 ## Features
 
-This MCP server provides eleven powerful tools for audio processing:
+This MCP server provides tools for audio processing:
 
 1. **separate_audio_layers** - Split audio into vocals, drums, bass, and other layers using Demucs
 2. **analyze_layer** - Extract musical features including notes, tempo, rhythm, and key using librosa
@@ -15,8 +15,7 @@ This MCP server provides eleven powerful tools for audio processing:
 7. **replace_layer** - Swap out specific audio layers in a mix
 8. **modify_layer** - Apply effects like pitch shift, time stretch, reverb, and normalization
 9. **mix_layers** - Combine multiple audio layers with volume control
-10. **separate_satb_voices** - Separate choral audio into SATB (Soprano/Alto/Tenor/Bass) voice parts
-11. **separate_lead_backing_vocals** - Separate lead vocals from instrumental/backing vocals
+10. **separate_lead_backing_vocals** - Separate lead vocals from instrumental/backing vocals
 
 ## Technology Stack
 
@@ -25,7 +24,6 @@ This MCP server provides eleven powerful tools for audio processing:
 - **Deep Learning**: PyTorch, Torchaudio, TensorFlow
 - **Audio Processing**: Demucs (vocal separation), Librosa (analysis)
 - **Vocal Separation**: RoFormer models (BS-RoFormer, MelBand-RoFormer)
-- **SATB Separation**: Conditioned U-Net models
 - **MCP Framework**: FastMCP
 - **MIDI Processing**: Pretty MIDI, Mido, Basic Pitch, CREPE, pyFluidSynth
 - **Music Notation**: Music21, LilyPond (for PDF/PNG export)
@@ -364,32 +362,7 @@ Combines multiple audio layers into a single mix.
 }
 ```
 
-### 10. separate_satb_voices
-
-Separates choral audio into SATB (Soprano/Alto/Tenor/Bass) voice parts.
-
-**Parameters:**
-- `audio_path` (str): Path to the input choral audio file
-- `output_dir` (str, optional): Directory where separated voice parts will be saved (default: ./output)
-- `model_type` (str, optional): Conditioning type - 'local' (default) or 'global'
-
-**Returns:**
-```json
-{
-  "success": true,
-  "voice_parts": {
-    "soprano": "./output/choir_soprano.wav",
-    "alto": "./output/choir_alto.wav",
-    "tenor": "./output/choir_tenor.wav",
-    "bass": "./output/choir_bass.wav"
-  },
-  "sample_rate": 22050,
-  "model_type": "local",
-  "message": "Successfully separated SATB voice parts using local model"
-}
-```
-
-### 11. separate_lead_backing_vocals
+### 10. separate_lead_backing_vocals
 
 Separates an audio file into lead vocals and instrumental/backing.
 
@@ -497,24 +470,7 @@ notation = export_notation(
 )
 ```
 
-### Example 5: Choral Voice Separation
-
-```python
-# Separate a choral piece into individual SATB voice parts
-result = separate_satb_voices(
-    audio_path="./input/choir_performance.wav",
-    output_dir="./output/satb",
-    model_type="local"
-)
-
-# Each voice part is now available separately
-# result["voice_parts"]["soprano"] = "./output/satb/choir_performance_soprano.wav"
-# result["voice_parts"]["alto"] = "./output/satb/choir_performance_alto.wav"
-# result["voice_parts"]["tenor"] = "./output/satb/choir_performance_tenor.wav"
-# result["voice_parts"]["bass"] = "./output/satb/choir_performance_bass.wav"
-```
-
-### Example 6: Lead Vocal Separation
+### Example 5: Lead Vocal Separation
 
 ```python
 # Separate lead vocals from backing/instrumental
@@ -563,7 +519,6 @@ final_mix = mix_layers(
 │   ├── synthesis.py     # MIDI to audio synthesis
 │   ├── mixing.py        # Layer mixing and replacement
 │   ├── effects.py       # Audio effects
-│   ├── satb_separation.py  # SATB voice separation
 │   └── vocal_separation.py # Lead/backing vocal separation
 ├── .dockerignore        # Docker build exclusions
 ├── .gitignore           # Git exclusions

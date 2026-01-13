@@ -9,7 +9,6 @@ from demucs.pretrained import get_model
 # Global caches
 _demucs_models = {}
 _roformer_models = {}
-_satb_models = {}
 _device = None
 
 
@@ -138,83 +137,3 @@ def get_roformer_model(model_name: str = 'melband'):
             ) from e
 
     return _roformer_models[model_name]
-
-
-def get_satb_model(model_type: str = 'local'):
-    """
-    Load and cache SATB Conditioned U-Net Keras model.
-
-    Args:
-        model_type: 'local' or 'global' domain conditioning
-
-    Returns:
-        Loaded Keras SATB model
-
-    Raises:
-        ValueError: If model_type is invalid
-        FileNotFoundError: If model file doesn't exist
-        RuntimeError: If model fails to load
-    """
-    global _satb_models
-
-    # Validation
-    if not isinstance(model_type, str):
-        raise ValueError(
-            f"Invalid model_type: must be a string, got {type(model_type).__name__}"
-        )
-
-    model_type = model_type.strip().lower()
-    if model_type not in ['local', 'global']:
-        raise ValueError(
-            f"Invalid model_type: {model_type}. Must be 'local' or 'global'"
-        )
-
-    # Cache check
-    if model_type not in _satb_models:
-        try:
-            import tensorflow as tf
-            from tensorflow import keras
-
-            # Configure TensorFlow to use GPU if available
-            gpus = tf.config.list_physical_devices('GPU')
-            if gpus:
-                try:
-                    # Enable memory growth to avoid allocating all GPU memory
-                    for gpu in gpus:
-                        tf.config.experimental.set_memory_growth(gpu, True)
-                except RuntimeError as e:
-                    print(
-                        f"GPU configuration warning: failed to enable memory growth ({e}). "
-                        "Continuing without memory growth; GPU may still be used.",
-                        flush=True,
-                    )
-
-            # Model filename mapping
-            model_files = {
-                'local': 'c-unet_ds_l.h5',
-                'global': 'c-unet_ds_g.h5'
-            }
-
-            # Use absolute path to container's models directory
-            # This ensures we use pre-downloaded models even when the working directory is /workspace
-            model_path = Path("/app/models/satb") / model_files[model_type]
-
-            if not model_path.exists():
-                raise FileNotFoundError(
-                    f"SATB model not found at {model_path}. "
-                    f"The model should be pre-downloaded in the container image. "
-                    f"If running locally, download from: https://drive.google.com/drive/folders/1zqdSLCGJ7cqw7oCP6iEhh3t2uIY9sC31"
-                )
-
-            # Load Keras model
-            print(f"Loading SATB {model_type} model from {model_path}...", flush=True)
-            model = keras.models.load_model(str(model_path), compile=False)
-            _satb_models[model_type] = model
-            print(f"✓ SATB {model_type} model loaded successfully", flush=True)
-
-        except Exception as e:
-            raise RuntimeError(
-                f"Failed to load SATB model '{model_type}': {str(e)}"
-            ) from e
-
-    return _satb_models[model_type]

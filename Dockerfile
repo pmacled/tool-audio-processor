@@ -82,14 +82,8 @@ RUN python -c "from utils.model_downloads import download_roformer_models; \
     download_roformer_models(); \
     print('RoFormer models downloaded successfully')"
 
-# Pre-download SATB models from Google Drive
-RUN python -c "from utils.model_downloads import download_satb_models; \
-    print('Downloading SATB models from Google Drive...'); \
-    download_satb_models(); \
-    print('SATB models downloaded successfully')"
-
 # Create cache directories and model directories with proper permissions
-RUN mkdir -p /tmp/numba_cache /tmp/librosa_cache /tmp/huggingface /tmp/torch /tmp/cache /tmp/matplotlib /app/models/roformer /app/models/satb \
+RUN mkdir -p /tmp/numba_cache /tmp/librosa_cache /tmp/huggingface /tmp/torch /tmp/cache /tmp/matplotlib /app/models/roformer \
     && chmod -R 755 /tmp/numba_cache /tmp/librosa_cache /tmp/huggingface /tmp/torch /tmp/cache /tmp/matplotlib /app/models
 
 # Expose MCP server port (if needed for stdio, this is optional)

@@ -42,7 +42,6 @@ def test_tool_definitions():
         "extract_melody_to_midi",
         "refine_midi",
         "export_notation",
-        "separate_satb_voices",
         "separate_lead_backing_vocals"
     ]
     
@@ -97,7 +96,6 @@ def test_mcp_decorator():
             "extract_melody_to_midi",
             "refine_midi",
             "export_notation",
-            "separate_satb_voices",
             "separate_lead_backing_vocals"
         ]
 

@@ -148,5 +148,3 @@ def get_roformer_model(model_name: str = 'melband', output_dir: str = './output'
         raise RuntimeError(
             f"Failed to load RoFormer model '{model_name}': {str(e)}"
         ) from e
-
-    return _roformer_models[model_name]

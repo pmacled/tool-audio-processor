@@ -37,11 +37,13 @@ def separate_vocals_internal(
         # Ensure output directory exists
         os.makedirs(output_dir, exist_ok=True)
 
-        # Load model
-        separator = get_roformer_model(model)
+        # Load model with output_dir
+        # Note: audio-separator requires output_dir during Separator initialization
+        separator = get_roformer_model(model, output_dir=output_dir)
 
         # Perform separation
-        output_files = separator.separate(audio_path, output_dir=output_dir)
+        # The separate() method only accepts audio_path (no output_dir parameter)
+        output_files = separator.separate(audio_path)
         
         # Validate return value
         if not output_files or not isinstance(output_files, (list, tuple)):

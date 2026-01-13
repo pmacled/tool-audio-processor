@@ -74,14 +74,20 @@ def get_demucs_model(model_name: str = 'mdx'):
     return _demucs_models[model_name]
 
 
-def get_roformer_model(model_name: str = 'melband'):
+def get_roformer_model(model_name: str = 'melband', output_dir: str = './output'):
     """
-    Load and cache RoFormer models (BS-RoFormer or MelBand-RoFormer).
+    Load RoFormer models (BS-RoFormer or MelBand-RoFormer).
+
+    Note: Unlike Demucs and SATB models, this function does NOT cache the Separator
+    instance because audio-separator requires output_dir to be specified during
+    initialization. The audio-separator library caches model weights internally,
+    so creating a new Separator instance for each call is still efficient.
 
     Pre-installed models: melband (default), bs
 
     Args:
         model_name: 'bs' for BS-RoFormer, 'melband' for MelBand-RoFormer
+        output_dir: Directory where separated files will be saved
 
     Returns:
         Separator instance with loaded model
@@ -90,8 +96,6 @@ def get_roformer_model(model_name: str = 'melband'):
         ValueError: If model_name is invalid
         RuntimeError: If model fails to load
     """
-    global _roformer_models
-
     # Validation
     if not isinstance(model_name, str):
         raise ValueError(
@@ -115,24 +119,24 @@ def get_roformer_model(model_name: str = 'melband'):
 
     model_filename = MODEL_MAP[model_name]
 
-    # Cache check
-    if model_name not in _roformer_models:
-        try:
-            from audio_separator.separator import Separator
+    try:
+        from audio_separator.separator import Separator
 
-            # Use absolute path to container's models directory
-            # This ensures we use pre-downloaded models even when working directory is /workspace
-            model_dir = Path("/app/models/roformer")
+        # Use absolute path to container's models directory
+        # This ensures we use pre-downloaded models even when working directory is /workspace
+        model_dir = Path("/app/models/roformer")
 
-            separator = Separator(
-                model_file_dir=str(model_dir),
-                output_format='wav'
-            )
-            separator.load_model(model_filename=model_filename)
-            _roformer_models[model_name] = separator
+        # Create Separator with output_dir - required by audio-separator API
+        separator = Separator(
+            model_file_dir=str(model_dir),
+            output_dir=output_dir,
+            output_format='wav'
+        )
+        separator.load_model(model_filename=model_filename)
+        return separator
 
-        except Exception as e:
-            raise RuntimeError(
+    except Exception as e:
+           raise RuntimeError(
                 f"Failed to load RoFormer model '{model_name}': {str(e)}"
             ) from e
 

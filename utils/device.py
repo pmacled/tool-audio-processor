@@ -93,7 +93,7 @@ def get_roformer_model(model_name: str = 'melband', output_dir: str = './output'
         Separator instance with loaded model
 
     Raises:
-        ValueError: If model_name is invalid
+        ValueError: If model_name or output_dir is invalid
         RuntimeError: If model fails to load
     """
     # Validation
@@ -105,6 +105,15 @@ def get_roformer_model(model_name: str = 'melband', output_dir: str = './output'
     model_name = model_name.strip().lower()
     if not model_name:
         raise ValueError("Invalid model_name: cannot be empty or whitespace-only")
+
+    if not isinstance(output_dir, str):
+        raise ValueError(
+            f"Invalid output_dir: must be a string, got {type(output_dir).__name__}: {repr(output_dir)}"
+        )
+
+    output_dir = output_dir.strip()
+    if not output_dir:
+        raise ValueError("Invalid output_dir: cannot be empty or whitespace-only")
 
     # Model mapping
     MODEL_MAP = {
